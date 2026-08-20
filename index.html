@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Velora — The system behind your career</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.hero{ padding: 90px 0 50px; text-align:center; }
+.hero-mark{ margin-bottom: 30px; display:flex; justify-content:center; }
+.hero h1{ font-family:'Space Grotesk', sans-serif; font-weight: 700; font-size: 50px; letter-spacing:-0.02em; margin: 0 0 18px; line-height: 1.12; }
+.hero h1 .grad{ background: linear-gradient(135deg, #F7C878 0%, #9B87F5 60%, #7BA9FF 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero p{ font-family:'Manrope', sans-serif; font-size: 17px; color: var(--text-dim); max-width: 580px; margin: 0 auto 8px; line-height: 1.6; }
+.hero-sub{ font-family:'JetBrains Mono', monospace; font-size: 12px; color: var(--text-faint); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 40px; }
+
+.belt{ margin-top: 60px; padding: 30px 0; border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); }
+.belt-inner{ display:flex; justify-content:space-between; gap: 20px; flex-wrap: wrap; font-family:'JetBrains Mono', monospace; font-size: 11.5px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.05em; }
+
+.section-head{ text-align:center; margin: 70px 0 10px; }
+.section-head .eyebrow{ font-family:'JetBrains Mono', monospace; font-size: 11.5px; color: var(--gold); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+.section-head h2{ font-family:'Space Grotesk', sans-serif; font-size: 26px; margin: 0; }
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+<div id="nav-root"></div>
+
+<div class="wrap">
+  <div class="hero">
+    <div class="hero-mark" id="heroMark"></div>
+    <h1>The system behind<br><span class="grad">your career</span>,<br>not just your next search.</h1>
+    <p>Velora watches the job, internship, college, and athletic landscape continuously, scores every opportunity against your actual long-term goal, and explains exactly why.</p>
+    <div class="hero-sub">Free to start · No credit card required</div>
+  </div>
+
+  <div class="section-head">
+    <div class="eyebrow">Get started</div>
+    <h2>Choose how you'll use Velora</h2>
+  </div>
+  <div class="role-grid">
+    <div class="role-card" id="roleCandidate">
+      <div class="ricon">🧭</div>
+      <h3>I'm looking for opportunities</h3>
+      <p>Students, recent grads, and career switchers - get a continuous watch, a real roadmap, and Metis as your guide.</p>
+    </div>
+    <div class="role-card" id="roleBusiness">
+      <div class="ricon">🏢</div>
+      <h3>I'm hiring</h3>
+      <p>Businesses and recruiters - get first look at promising, opted-in candidates before anyone else sees them.</p>
+    </div>
+    <div class="role-card" id="roleTutor">
+      <div class="ricon">🎓</div>
+      <h3>I want to tutor</h3>
+      <p>Apply to become a vetted tutor and help candidates close the skill gaps standing between them and their goal.</p>
+    </div>
+  </div>
+
+  <div class="belt">
+    <div class="belt-inner">
+      <span>Jobs · Internships · College &amp; Fellowships · Athletics</span>
+      <span>Continuous watch, not one-time search</span>
+      <span>Every match, explained</span>
+    </div>
+  </div>
+
+  <footer>Velora is a demo - listings shown are illustrative, not live postings.</footer>
+</div>
+
+<script src="state.js"></script>
+<script>
+  initStarfield();
+  renderNav('home');
+  document.getElementById('heroMark').innerHTML = veloraMark(72);
+
+  document.getElementById('roleCandidate').addEventListener('click', ()=>{
+    localStorage.setItem('velora_role', 'candidate');
+    const profile = getProfile();
+    window.location.href = profile ? 'dashboard.html' : 'survey.html';
+  });
+  document.getElementById('roleBusiness').addEventListener('click', ()=>{
+    localStorage.setItem('velora_role', 'business');
+    window.location.href = 'business-dashboard.html';
+  });
+  document.getElementById('roleTutor').addEventListener('click', ()=>{
+    localStorage.setItem('velora_role', 'tutor');
+    window.location.href = 'tutor-dashboard.html';
+  });
+</script>
+</body>
+</html>
