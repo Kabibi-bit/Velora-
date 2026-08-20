@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Candidate Search — Velora for Business</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.cand-card{ background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; margin-bottom: 14px; }
+.cand-top{ display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.cand-title{ font-family:'Space Grotesk', sans-serif; font-weight:700; font-size: 15.5px; margin:0 0 4px; }
+.cand-meta{ font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--text-faint); }
+.cand-skills{ font-family:'Manrope', sans-serif; font-size: 13px; color: var(--text-dim); margin-top: 10px; line-height:1.5; }
+.locked{ filter: blur(5px); pointer-events: none; user-select: none; }
+.paywall{ text-align:center; padding: 40px 20px; }
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+<div id="nav-root"></div>
+
+<div class="wrap">
+  <div class="page">
+    <div class="page-head">
+      <div class="eyebrow">For business</div>
+      <h1>Candidate search</h1>
+      <p>First look at promising, opted-in candidates before anyone else sees them.</p>
+    </div>
+
+    <div class="panel" id="registerPanel">
+      <h2>Your organization</h2>
+      <div class="sub">Register once to unlock candidate search.</div>
+      <label for="companyName">Company name</label>
+      <input type="text" id="companyName" placeholder="e.g. Fernway Labs">
+      <label for="contactEmail">Contact email</label>
+      <input type="text" id="contactEmail" placeholder="you@company.com">
+      <button class="btn violet block" id="registerBtn">Register &amp; unlock search</button>
+    </div>
+
+    <div id="searchArea" class="hidden">
+      <div class="panel" style="margin-bottom:20px;">
+        <h2>First-look access</h2>
+        <div class="sub">Purchase a window of early access to candidates who've opted in.</div>
+        <div class="stat-row">
+          <div class="stat-box"><div class="snum" id="accessStatus">Inactive</div><div class="slabel">Access status</div></div>
+          <div class="stat-box"><div class="snum" id="candidateCount">0</div><div class="slabel">Opted-in candidates</div></div>
+          <div class="stat-box"><div class="snum">$149</div><div class="slabel">30-day first look</div></div>
+        </div>
+        <button class="btn violet block" id="purchaseBtn">Purchase 30-day first-look access</button>
+        <div class="hint">Demo mode: this simulates the purchase flow described in the backend spec. No real payment is collected here - real billing needs a Stripe integration, a separate build step.</div>
+      </div>
+
+      <div id="candidateResults"></div>
+    </div>
+  </div>
+  <footer>Velora is a demo - candidate data shown is illustrative, not real applicants.</footer>
+</div>
+
+<script src="state.js"></script>
+<script>
+window.addEventListener("error", function(e){
+  var msg = "Script error: " + e.message + " (in " + (e.filename ? e.filename.split("/").pop() : "unknown file") + ", line " + e.lineno + ")";
+  showDiagBanner(msg);
+});
+function showDiagBanner(msg){
+  if(document.getElementById("diagBanner")) return;
+  var b = document.createElement("div");
+  b.id = "diagBanner";
+  b.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;background:#B91C1C;color:#fff;padding:14px 20px;font-family:monospace;font-size:13px;text-align:center;";
+  b.textContent = "Velora failed to load correctly - " + msg + " - check that all files (especially state.js and styles.css) are uploaded with these EXACT lowercase names to the same folder.";
+  document.body.prepend(b);
+}
+setTimeout(function(){
+  if(typeof renderNav === "undefined" || typeof veloraMark === "undefined"){
+    showDiagBanner("state.js did not load (its functions are undefined). Check the file exists, is named exactly state.js, and sits in the same folder as this page.");
+  }
+}, 800);
+</script>
+<script>
+initStarfield();
+localStorage.setItem('velora_role', 'business');
+renderNav('business');
+
+const MOCK_CANDIDATES = [
+  {northstar: 'Break into data-focused product management', skills: 'SQL, Python, A/B testing, product analytics', stage: 'Student', location: 'Remote / SF Bay Area', timeframe: '6-12 mo'},
+  {northstar: 'Transition into UX research from a design background', skills: 'Figma, user interviews, synthesis, prototyping', stage: 'Career switcher', location: 'Remote', timeframe: '1-2 yr'},
+  {northstar: 'Land a machine learning engineering role', skills: 'Python, PyTorch, SQL, ML pipelines', stage: 'Recent grad', location: 'Seattle, WA', timeframe: 'Now'},
+  {northstar: 'Move into technical program management', skills: 'Stakeholder management, SQL, process design', stage: 'Currently working', location: 'Remote', timeframe: '1-2 yr'},
+];
+
+const registered = localStorage.getItem('velora_business_registered') === 'true';
+const accessActive = localStorage.getItem('velora_business_access') === 'true';
+if(registered){
+  document.getElementById('registerPanel').classList.add('hidden');
+  document.getElementById('searchArea').classList.remove('hidden');
+}
+updateAccessUI();
+
+document.getElementById('registerBtn').addEventListener('click', ()=>{
+  const name = document.getElementById('companyName').value.trim();
+  const email = document.getElementById('contactEmail').value.trim();
+  if(!name || !email) return;
+  localStorage.setItem('velora_business_registered', 'true');
+  localStorage.setItem('velora_business_name', name);
+  document.getElementById('registerPanel').classList.add('hidden');
+  document.getElementById('searchArea').classList.remove('hidden');
+  updateAccessUI();
+});
+
+document.getElementById('purchaseBtn').addEventListener('click', ()=>{
+  localStorage.setItem('velora_business_access', 'true');
+  updateAccessUI();
+});
+
+function updateAccessUI(){
+  const active = localStorage.getItem('velora_business_access') === 'true';
+  document.getElementById('accessStatus').textContent = active ? 'Active' : 'Inactive';
+  document.getElementById('candidateCount').textContent = active ? MOCK_CANDIDATES.length : 0;
+  const results = document.getElementById('candidateResults');
+  if(!active){
+    results.innerHTML = `<div class="empty-state"><div class="glyph">&#128274;</div>No active access.<div class="sub">Purchase first-look access above to view opted-in candidates.</div></div>`;
+    return;
+  }
+  results.innerHTML = MOCK_CANDIDATES.map(c => `
+    <div class="cand-card">
+      <div class="cand-top">
+        <div><p class="cand-title">${c.northstar}</p><div class="cand-meta">${c.stage} - ${c.location} - ${c.timeframe}</div></div>
+      </div>
+      <div class="cand-skills">${c.skills}</div>
+    </div>`).join('');
+}
+</script>
+</body>
+</html>
