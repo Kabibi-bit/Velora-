@@ -171,7 +171,11 @@ footer{ margin-top: 64px; padding: 32px 0; border-top: 1px solid var(--line-soft
 .roadmap-step.current .roadmap-dot{ background: var(--gold); border-color: var(--gold); box-shadow: 0 0 0 4px rgba(240,178,78,0.2); }
 .roadmap-step h4{ font-family:'Space Grotesk', sans-serif; font-size: 14.5px; margin: 0 0 4px; color: var(--text); }
 .roadmap-step p{ font-family:'Manrope', sans-serif; font-size: 12.5px; color: var(--text-dim); margin: 0; line-height: 1.5; }
-.roadmap-stage-badge{ font-family:'JetBrains Mono', monospace; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-faint); margin-top: 6px; display:inline-block; }
+.roadmap-step .roadmap-success{ margin-top: 6px; color: var(--text); }
+.roadmap-step .roadmap-success b{ color: var(--aurora); }
+.roadmap-meta-row{ display:flex; align-items:center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+.roadmap-timeframe{ font-family:'JetBrains Mono', monospace; font-size: 10px; color: var(--gold); border: 1px solid rgba(240,178,78,0.35); background: var(--gold-dim); padding: 3px 9px; border-radius: 999px; }
+.roadmap-stage-badge{ font-family:'JetBrains Mono', monospace; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-faint); }
  
 .stat-row{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .stat-box{ background: var(--void); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px; }
