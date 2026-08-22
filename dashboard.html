@@ -98,10 +98,31 @@
         </div>
       </div>
 
+      <div class="chart-grid" style="margin-bottom:26px;">
+        <div class="chart-panel">
+          <h3>Application outcomes</h3>
+          <div class="sub">Where your applications have actually landed.</div>
+          <div class="donut-row" id="outcomeDonut"></div>
+        </div>
+        <div class="chart-panel">
+          <h3>Career potential</h3>
+          <div class="sub">A composite of profile strength, roadmap progress, and match quality.</div>
+          <div class="gauge-wrap" id="potentialGauge"></div>
+        </div>
+      </div>
+
+      <div class="chart-panel" style="margin-bottom:26px;">
+        <h3>Monthly targets</h3>
+        <div class="sub">Applications actually sent vs. your target pace, by month.</div>
+        <div id="monthlyTargetChart"></div>
+        <div class="target-summary" id="targetSummary"></div>
+      </div>
+
       <div class="panel" style="margin-bottom:26px;">
         <h2>Your roadmap</h2>
-        <div class="sub">Generated from your survey answers - the path from here to your stated goal.</div>
+        <div class="sub">Generated from your survey answers and real skill gaps from your matches - the path from here to your stated goal.</div>
         <div class="roadmap-track" id="roadmapTrack"></div>
+        <button class="btn ghost" id="regenerateRoadmapBtn" style="margin-top:16px;">Regenerate from latest matches</button>
       </div>
 
       <div class="grid">
@@ -168,6 +189,7 @@
 </div>
 
 <script src="state.js"></script>
+<script src="charts.js"></script>
 <script>
 window.addEventListener("error", function(e){
   var msg = "Script error: " + e.message + " (in " + (e.filename ? e.filename.split("/").pop() : "unknown file") + ", line " + e.lineno + ")";
@@ -399,25 +421,82 @@ function drawSavedList(){
   const scoredById = {}; lastScored.forEach(l=> scoredById[l.id]=l.pct);
   el.innerHTML = items.map(l=> `<div class="saved-mini"><span>${l.title}</span><span class="pct">${scoredById[l.id]!==undefined ? scoredById[l.id]+'%' : ''}</span></div>`).join('');
 }
+function computeSkillGapsForRoadmap(){
+  if(!lastScored.length) return [];
+  const skillTokens = tokenize(profile.skills || '');
+  const goalTokens = tokenize(profile.northstar + ' ' + profile.finalidea);
+  const freq = {};
+  lastScored.slice(0,8).forEach(l => l.tags.forEach(tag => {
+    const known = skillTokens.some(t => tag.includes(t) || t.includes(tag)) || goalTokens.some(t => tag.includes(t) || t.includes(tag));
+    if(!known) freq[tag] = (freq[tag] || 0) + 1;
+  }));
+  return Object.entries(freq).sort((a,b) => b[1]-a[1]).slice(0,4).map(([tag]) => tag);
+}
+
 function renderRoadmap(){
   let roadmap = getRoadmap();
-  if(!roadmap){ roadmap = generateRoadmapLocal(profile); saveRoadmap(roadmap); }
+  if(!roadmap){
+    const skillGaps = computeSkillGapsForRoadmap();
+    roadmap = generateRoadmapLocal(profile, skillGaps);
+    saveRoadmap(roadmap);
+  }
   const track = document.getElementById('roadmapTrack');
   if(!track) return;
-  const currentStage = 1; // heuristic: first step is always "current" in this demo
+  const currentStage = 1;
   track.innerHTML = roadmap.map((step) => {
     const cls = step.stage < currentStage ? 'done' : step.stage === currentStage ? 'current' : '';
     return `<div class="roadmap-step ${cls}">
       <div class="roadmap-dot"></div>
       <h4>${step.title}</h4>
       <p>${step.description}</p>
-      <span class="roadmap-stage-badge">Stage ${step.stage} of ${roadmap.length}</span>
+      ${step.success_criteria ? `<p class="roadmap-success"><b>Done when:</b> ${step.success_criteria}</p>` : ''}
+      <div class="roadmap-meta-row">
+        <span class="roadmap-stage-badge">Stage ${step.stage} of ${roadmap.length}</span>
+        ${step.estimated_timeframe ? `<span class="roadmap-timeframe">${step.estimated_timeframe}</span>` : ''}
+      </div>
     </div>`;
   }).join('');
 }
 
+function regenerateRoadmap(){
+  const skillGaps = computeSkillGapsForRoadmap();
+  const roadmap = generateRoadmapLocal(profile, skillGaps);
+  saveRoadmap(roadmap);
+  renderRoadmap();
+}
+
+function renderCandidateCharts(){
+  const outcomes = seedOutcomesIfEmpty();
+  const statusColors = { offer: 'var(--aurora)', interview: 'var(--comet)', applied: 'var(--gold)', rejected: 'var(--danger)', ghosted: 'var(--text-faint)' };
+  const statusLabels = { offer: 'Offers', interview: 'Interviews', applied: 'Applied (pending)', rejected: 'Rejected', ghosted: 'Ghosted' };
+  const counts = {};
+  outcomes.forEach(o => { counts[o.status] = (counts[o.status] || 0) + 1; });
+  const segments = Object.keys(statusLabels).filter(k => counts[k]).map(k => ({ label: statusLabels[k], value: counts[k], color: statusColors[k] }));
+  document.getElementById('outcomeDonut').innerHTML = donutChart(segments, 130, 18) + donutLegend(segments);
+
+  const roadmap = getRoadmap() || [];
+  const roadmapProgress = roadmap.length ? Math.round((1 / roadmap.length) * 100) : 0;
+  const skillTokens = tokenize(profile.skills || '');
+  const skillStrength = Math.min(100, skillTokens.length * 8);
+  const matchQuality = lastScored.length ? Math.round(lastScored.reduce((s,l)=>s+l.pct,0)/lastScored.length) : 40;
+  const potential = Math.round((roadmapProgress * 0.3) + (skillStrength * 0.3) + (matchQuality * 0.4));
+  document.getElementById('potentialGauge').innerHTML = gaugeChart(potential, 130, 'var(--gold)') +
+    `<div class="gauge-value">${potential}</div><div class="gauge-label">Potential score</div>`;
+
+  const months = ['Jun', 'Jul', 'Aug'];
+  const targetPerMonth = 8;
+  const monthly = monthlyTargetData(outcomes, targetPerMonth, months);
+  document.getElementById('monthlyTargetChart').innerHTML = barChart(monthly, {width: 400, height: 130});
+  const totalActual = monthly.reduce((s,m)=>s+m.actual, 0);
+  const totalTarget = monthly.reduce((s,m)=>s+m.target, 0);
+  const pctOfTarget = Math.round((totalActual/totalTarget)*100);
+  document.getElementById('targetSummary').innerHTML = `<span>Applications sent: <b>${totalActual}</b> of ${totalTarget} targeted</span><span>Pace: <b>${pctOfTarget}%</b> of target</span>`;
+}
+
 if(profile){
   renderRoadmap();
+  renderCandidateCharts();
+  document.getElementById('regenerateRoadmapBtn').addEventListener('click', regenerateRoadmap);
   if(lastScored.length){
     document.getElementById('toolbar').classList.remove('hidden');
     resultsCount.textContent = `${lastScored.length} matches surfaced - cycle ${cycleCount}`;
