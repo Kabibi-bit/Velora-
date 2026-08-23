@@ -1,3 +1,4 @@
+
 /* ============ VELORA SHARED CORE ============ */
  
 /* ---- Logo mark: guiding star, navy + gold ---- */
@@ -73,6 +74,7 @@ function renderNav(activePage){
     links = [
       {id: 'survey', label: 'Survey', href: 'survey.html'},
       {id: 'dashboard', label: 'Job Search', href: 'dashboard.html'},
+      {id: 'roadmap', label: 'Roadmap', href: 'roadmap.html'},
       {id: 'workshop', label: 'Workshop', href: 'workshop.html'},
       {id: 'inbox', label: 'Inbox', href: 'inbox.html'},
     ];
@@ -278,6 +280,8 @@ function generateRoadmapLocal(profile, skillGaps, topMatch){
       success_criteria: 'You have a live link, repo, or writeup you would actually be comfortable sending to a stranger.',
       estimated_timeframe: '2-4 weeks',
       first_action: 'Today: write down the exact project idea in one sentence and pick the single dataset, tool, or problem you will use.',
+      resource: 'A public dataset on Kaggle or your school\'s data repository in a domain close to your goal.',
+      risk: 'Picking a project too broad to finish in the timeframe - scope it down until you could finish a rough version in a weekend.',
     });
     if(gapSkill){
       steps.push({
@@ -286,6 +290,8 @@ function generateRoadmapLocal(profile, skillGaps, topMatch){
         success_criteria: `You can walk someone through one real example of using ${gapSkill}, not just say you've "studied" it.`,
         estimated_timeframe: '3-6 weeks',
         first_action: `Today: find one free tutorial or real dataset involving ${gapSkill} and complete the first concrete exercise, not just watch an overview.`,
+        resource: `A free-tier course or official documentation site for ${gapSkill}, paired with one real practice problem.`,
+        risk: 'Passively watching tutorials without building anything - force yourself to produce one artifact, however small.',
       });
     }
     steps.push({
@@ -294,6 +300,8 @@ function generateRoadmapLocal(profile, skillGaps, topMatch){
       success_criteria: 'You have applied to at least 5 internships scoring 60%+ and heard back from at least 1.',
       estimated_timeframe: '1-3 months',
       first_action: matchFirstAction,
+      resource: 'Your Job Search watch, filtered and sorted by match percentage.',
+      risk: 'Applying broadly to low-fit roles instead of a focused set of high-fit ones - quality of application beats quantity here.',
     });
     steps.push({
       title: `Convert your internship into a full-time offer near "${finalPhrase}"`,
@@ -301,6 +309,8 @@ function generateRoadmapLocal(profile, skillGaps, topMatch){
       success_criteria: 'You have a signed offer, or are in final-round interviews at 2+ places.',
       estimated_timeframe: '2-4 months',
       first_action: 'Once your internship starts: identify the one metric your manager cares about most and make visible progress on it in your first 30 days.',
+      resource: 'Your internship manager and one senior peer, as direct sources of what "doing well" actually looks like there.',
+      risk: 'Staying heads-down on tasks without ever confirming with your manager whether you\'re prioritizing the right things.',
     });
   } else if(stage === 'grad'){
     steps.push({
@@ -309,6 +319,8 @@ function generateRoadmapLocal(profile, skillGaps, topMatch){
       success_criteria: 'A friend can read your resume for 30 seconds and correctly state your strongest qualification back to you.',
       estimated_timeframe: '1 week',
       first_action: 'Today: pick your single best accomplishment and rewrite it with a specific number attached.',
+      resource: 'One trusted peer or mentor willing to give blunt, specific feedback on a draft.',
+      risk: 'Over-polishing wording instead of fixing substance - a vague strong bullet needs a real number, not better adjectives.',
     });
     if(gapSkill){
       steps.push({
@@ -317,6 +329,8 @@ function generateRoadmapLocal(profile, skillGaps, topMatch){
         success_criteria: `You have one concrete example of using ${gapSkill} you could describe in an interview.`,
         estimated_timeframe: '3-4 weeks',
         first_action: `Today: find one small, real task involving ${gapSkill} you could complete this week.`,
+        resource: `A free-tier course or official documentation for ${gapSkill}.`,
+        risk: 'Treating this as optional polish rather than a real gap - if it shows up in most of your target listings, it is load-bearing.',
       });
     }
     steps.push({
@@ -325,6 +339,8 @@ function generateRoadmapLocal(profile, skillGaps, topMatch){
       success_criteria: 'You are actively interviewing at 3+ roles scoring 70%+ match.',
       estimated_timeframe: '1-2 months',
       first_action: matchFirstAction,
+      resource: 'Your Job Search watch, filtered and sorted by match percentage.',
+      risk: 'Chasing brand-name companies over genuine fit - a role that\'s a poor fit rarely converts even if the interview goes well.',
     });
     steps.push({
       title: `Build one documented win in your first 12 months toward "${finalPhrase}"`,
@@ -332,6 +348,8 @@ function generateRoadmapLocal(profile, skillGaps, topMatch){
       success_criteria: 'You have one specific, quantified accomplishment you could cite in a promotion or next-job conversation.',
       estimated_timeframe: '12 months',
       first_action: 'In your first week on the job: ask your manager directly what success looks like in 90 days, in their own words.',
+      resource: 'Your manager\'s own stated priorities, gathered directly rather than assumed.',
+      risk: 'Assuming you know what matters without confirming it - misaligned effort is invisible until review time.',
     });
   } else if(stage === 'switch'){
     steps.push({
@@ -340,6 +358,8 @@ function generateRoadmapLocal(profile, skillGaps, topMatch){
       success_criteria: 'You can say this pitch out loud in under 30 seconds without sounding rehearsed.',
       estimated_timeframe: '1 week',
       first_action: 'Today: write 3 bullet points translating your most relevant past work into your target field\'s terms.',
+      resource: 'One person already working in your target field, willing to sanity-check your pitch for 15 minutes.',
+      risk: 'Leading with your old title instead of your transferable substance - the title itself can work against you here.',
     });
     if(gapSkill){
       steps.push({
@@ -348,6 +368,8 @@ function generateRoadmapLocal(profile, skillGaps, topMatch){
         success_criteria: `You've completed one project, course, or task that used ${gapSkill} for real, not just watched a tutorial.`,
         estimated_timeframe: '4-8 weeks',
         first_action: `Today: find one real (not toy) problem you could solve using ${gapSkill} and start it this week.`,
+        resource: `A real (not toy) problem from your current job or a public dataset that requires ${gapSkill} to solve.`,
+        risk: 'Choosing a tutorial-style toy project - hiring managers can tell the difference between a real problem and a walkthrough.',
       });
     }
     steps.push({
@@ -356,6 +378,8 @@ function generateRoadmapLocal(profile, skillGaps, topMatch){
       success_criteria: 'You have an offer, or serious interest, in a role touching both your old and new field.',
       estimated_timeframe: '2-4 months',
       first_action: matchFirstAction,
+      resource: 'Your Job Search watch, filtered for roles tagged with both your old and new domain.',
+      risk: 'Jumping straight for a pure new-field role before you have any bridge experience - the hybrid step de-risks the whole switch.',
     });
   } else {
     steps.push({
@@ -364,6 +388,8 @@ function generateRoadmapLocal(profile, skillGaps, topMatch){
       success_criteria: 'You can describe your target role or outcome in one concrete sentence, with a real title attached.',
       estimated_timeframe: '1 week',
       first_action: 'Today: write down the exact job title or outcome you\'re aiming for - if you can\'t name one, that\'s the actual first problem to solve.',
+      resource: 'Job postings for people already doing what you want to do, as a reference for real titles and scope.',
+      risk: 'Staying vague on purpose to avoid commitment - a specific wrong target is easier to correct than no target at all.',
     });
     if(gapSkill){
       steps.push({
@@ -372,6 +398,8 @@ function generateRoadmapLocal(profile, skillGaps, topMatch){
         success_criteria: `You have one concrete, recent example of using ${gapSkill} you could cite today.`,
         estimated_timeframe: '3-6 weeks',
         first_action: `Today: identify one visible task at your current job or a side project where you could apply ${gapSkill} this month.`,
+        resource: 'A visible task at your current job where this skill would genuinely help, rather than a side project nobody sees.',
+        risk: 'Building the skill invisibly on the side - if nobody who controls your next move ever sees it, it doesn\'t count yet.',
       });
     }
     steps.push({
@@ -380,6 +408,8 @@ function generateRoadmapLocal(profile, skillGaps, topMatch){
       success_criteria: 'Someone with real influence over your next step has proactively mentioned your progress, unprompted.',
       estimated_timeframe: '1-2 months',
       first_action: 'This week: identify exactly who decides your next move, and find one legitimate reason to update them on progress.',
+      resource: 'A regular, low-key update channel (a monthly note, a standing 1:1) rather than one big pitch.',
+      risk: 'Waiting for a single perfect moment to make your case - visibility built gradually is more credible than a sudden pitch.',
     });
     steps.push({
       title: `Make the ask for "${finalPhrase}"`,
@@ -387,9 +417,17 @@ function generateRoadmapLocal(profile, skillGaps, topMatch){
       success_criteria: 'You have formally made the ask to the person or process that controls the decision.',
       estimated_timeframe: '2-4 weeks',
       first_action: 'Once ready: schedule the actual conversation or submit the actual application - put a date on the calendar now, not "soon".',
+      resource: 'A specific date on your calendar, treated as a real commitment.',
+      risk: 'Letting "almost ready" become permanent - the groundwork steps above are meant to end, not continue indefinitely.',
     });
   }
-  return steps.map((s, i) => ({...s, stage: i + 1}));
+ 
+  const summary = `This plan moves from ${stage === 'student' ? 'building proof of your interest' : stage === 'grad' ? 'sharpening your existing story' : stage === 'switch' ? 'translating your background' : 'clarifying your target'} toward "${goalPhrase}" in roughly ${steps.length} stages. ${gapSkill ? `The biggest risk to the whole plan is skipping the ${gapSkill} gap - it shows up repeatedly in your real matches and closing it early makes every later stage easier.` : 'The biggest risk to the whole plan is moving to the next stage before the current one has a real, checkable result - momentum without evidence tends to stall.'}`;
+ 
+  return {
+    summary,
+    milestones: steps.map((s, i) => ({...s, stage: i + 1, status: 'planned'})),
+  };
 }
  
 /* ---- Metis floating widget (shared include, used on every logged-in page) ---- */
