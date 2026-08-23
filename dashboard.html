@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Search — Velora</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.grid{ display:grid; grid-template-columns: 330px minmax(0,1fr) 300px; gap: 26px; align-items:start; }
+@media (max-width: 1180px){ .grid{ grid-template-columns: 320px minmax(0,1fr); } .insights-col{ grid-column: 1 / -1; } }
+@media (max-width: 760px){ .grid{ grid-template-columns: 1fr; } }
+.radar-wrap{ display:flex; align-items:center; justify-content:center; padding: 20px 0 8px; }
+.radar{ width: 82px; height: 82px; border-radius:50%; position:relative; border: 1px solid var(--line); background: radial-gradient(circle, transparent 0 40%, var(--line) 40% 41%, transparent 41%), var(--void); overflow:hidden; }
+.sweep{ position:absolute; inset:0; background: conic-gradient(from 0deg, rgba(240,178,78,0.5), transparent 28%); animation: spin 2.4s linear infinite; border-radius:50%; }
+@keyframes spin{ to{ transform: rotate(360deg); } }
+.radar.idle .sweep{ animation-play-state: paused; opacity:0.2; }
+.log{ font-family:'JetBrains Mono', monospace; font-size: 11.5px; color: var(--text-dim); max-height: 200px; overflow-y:auto; border-top: 1px solid var(--line); margin-top: 18px; padding-top: 14px; }
+.log-line{ padding: 4px 0; opacity:0; animation: fadeIn .3s ease forwards; display:flex; gap:8px; }
+.log-line .ts{ color: var(--gold); flex-shrink:0; }
+@keyframes fadeIn{ to{ opacity:1; } }
+.toolbar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:18px; background: var(--panel); border:1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+.toolbar input[type=text]{ max-width: 190px; padding:9px 12px; font-size:13.5px; }
+.toolbar .divider{ width:1px; height:22px; background: var(--line); margin:0 2px; }
+.toolbar .sort-label{ font-family:'JetBrains Mono', monospace; font-size:10px; text-transform:uppercase; color:var(--text-faint); letter-spacing:0.05em; }
+.results-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom: 16px; flex-wrap:wrap; gap:8px; }
+.results-head h2{ margin:0; font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-dim); }
+.results-count{ font-family:'JetBrains Mono', monospace; font-size: 11.5px; color: var(--text-faint); }
+.card{ background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; margin-bottom: 15px; opacity:0; transform: translateY(8px); animation: cardIn .45s ease forwards; transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease; }
+.card:hover{ border-color: var(--text-faint); transform: translateY(-2px); box-shadow: 0 12px 32px rgba(0,0,0,0.5); }
+.card.fresh{ border-color: rgba(95,224,184,0.5); }
+.card.saved{ border-color: rgba(240,178,78,0.5); }
+@keyframes cardIn{ to{ opacity:1; transform:none; } }
+.card-body{ display:grid; grid-template-columns: 56px 1fr; gap: 18px; }
+.score-ring{ width: 52px; height:52px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Space Grotesk', sans-serif; font-weight:700; font-size: 13.5px; position:relative; }
+.score-ring svg{ position:absolute; inset:0; transform: rotate(-90deg); }
+.score-ring span{ position:relative; z-index:1; }
+.card-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; }
+.card-title{ font-family:'Space Grotesk', sans-serif; font-weight:700; font-size: 15.5px; margin:0; }
+.card-org{ font-family:'JetBrains Mono', monospace; font-size: 11.5px; color: var(--text-faint); margin-top:4px; }
+.icon-btn{ background:none; border:1px solid var(--line); border-radius:6px; color: var(--text-faint); width:30px; height:30px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:14px; transition: all .15s ease; flex-shrink:0; }
+.icon-btn:hover{ border-color: var(--gold); color: var(--gold); }
+.icon-btn.starred{ color: var(--gold); border-color: rgba(240,178,78,0.5); background: var(--gold-dim); }
+.card-rationale{ margin: 12px 0 6px; font-size: 13.5px; line-height:1.6; color: var(--text); }
+.card-rationale b{ color: var(--gold); font-weight:700; }
+.card-roadmap-fit{ margin: 4px 0 6px; font-size: 12.5px; line-height:1.5; color: var(--text-dim); padding: 8px 10px; background: var(--void); border-radius: 8px; border: 1px solid var(--line-soft); }
+.card-roadmap-fit b{ color: var(--aurora); font-weight:700; }
+.card-roadmap-fit-none{ color: var(--text-faint); font-style: italic; }
+.card-meta{ font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--text-faint); margin-top:4px; }
+.card-toggle{ margin-top:12px; background:none; border:none; color: var(--text-faint); font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:0.04em; text-transform:uppercase; cursor:pointer; padding:0; display:flex; align-items:center; gap:6px; }
+.card-toggle .arrow{ transition: transform .2s ease; }
+.card-toggle.open .arrow{ transform: rotate(90deg); }
+.card-details{ max-height:0; overflow:hidden; transition: max-height .25s ease; }
+.card-details.open{ max-height:220px; }
+.card-details-inner{ padding-top:14px; margin-top:12px; border-top:1px solid var(--line-soft); }
+.breakdown-row{ display:flex; align-items:center; gap:10px; margin-bottom:8px; font-family:'JetBrains Mono', monospace; font-size:10.5px; }
+.breakdown-label{ width:90px; color: var(--text-faint); flex-shrink:0; }
+.breakdown-bar-track{ flex:1; height:6px; background: var(--line-soft); border-radius:3px; overflow:hidden; }
+.breakdown-bar-fill{ height:100%; border-radius:3px; }
+.breakdown-val{ width:34px; text-align:right; color: var(--text-dim); }
+.trajectory-svg{ width:100%; height:70px; display:block; }
+.mini-label{ font-family:'JetBrains Mono', monospace; font-size:10px; color: var(--text-faint); display:flex; justify-content:space-between; margin-top:6px; }
+.type-bar-row{ margin-bottom:12px; }
+.type-bar-head{ display:flex; justify-content:space-between; font-family:'JetBrains Mono', monospace; font-size:10.5px; color: var(--text-dim); margin-bottom:5px; }
+.type-bar-track{ height:7px; background: var(--line-soft); border-radius:4px; overflow:hidden; }
+.type-bar-fill{ height:100%; border-radius:4px; transition: width .4s ease; }
+.gap-tag{ display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono', monospace; font-size:11px; padding:6px 11px; border-radius:999px; border:1px solid var(--line); color: var(--text-dim); margin:0 6px 8px 0; }
+.gap-tag b{ color: var(--gold); font-weight:600; }
+.saved-mini{ font-family:'JetBrains Mono', monospace; font-size:12px; color: var(--text-dim); padding:8px 0; border-bottom:1px solid var(--line-soft); display:flex; justify-content:space-between; gap:8px; }
+.saved-mini:last-child{ border-bottom:none; }
+.saved-mini .pct{ color: var(--aurora); flex-shrink:0; }
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+<div id="nav-root"></div>
+
+<div class="wrap">
+  <div class="page">
+    <div class="page-head">
+      <div class="eyebrow">Job search</div>
+      <h1>Ranked opportunity watch</h1>
+      <p>Start the watch once - it keeps re-scanning and re-ranking on its own.</p>
+    </div>
+
+    <div id="noProfile" class="empty-state hidden">
+      <div class="glyph">&#10022;</div>
+      No survey answers yet.
+      <div class="sub">Complete the survey first so matches can be scored against your goal.</div>
+      <a class="btn" href="survey.html">Go to survey &rarr;</a>
+    </div>
+
+    <div id="mainContent" class="hidden">
+      <div class="panel" style="margin-bottom:26px;">
+        <h2>Recent success</h2>
+        <div class="sub">A quick pulse on how the watch is performing for you.</div>
+        <div class="stat-row">
+          <div class="stat-box"><div class="snum" id="statAvgMatch">-</div><div class="slabel">Avg match this cycle</div></div>
+          <div class="stat-box"><div class="snum" id="statSavedCount">0</div><div class="slabel">Saved opportunities</div></div>
+          <div class="stat-box"><div class="snum" id="statCyclesRun">0</div><div class="slabel">Scan cycles run</div></div>
+        </div>
+      </div>
+
+      <div class="chart-grid" style="margin-bottom:26px;">
+        <div class="chart-panel">
+          <h3>Application outcomes</h3>
+          <div class="sub">Where your applications have actually landed.</div>
+          <div class="donut-row" id="outcomeDonut"></div>
+        </div>
+        <div class="chart-panel">
+          <h3>Career potential</h3>
+          <div class="sub">A composite of profile strength, roadmap progress, and match quality.</div>
+          <div class="gauge-wrap" id="potentialGauge"></div>
+        </div>
+      </div>
+
+      <div class="chart-panel" style="margin-bottom:26px;">
+        <h3>Monthly targets</h3>
+        <div class="sub">Applications actually sent vs. your target pace, by month.</div>
+        <div id="monthlyTargetChart"></div>
+        <div class="target-summary" id="targetSummary"></div>
+      </div>
+
+      <div class="panel" style="margin-bottom:26px;">
+        <h2>Your roadmap</h2>
+        <div class="sub">Full plan, stage by stage, with resources and risks for each step.</div>
+        <div id="roadmapPreview"></div>
+        <a class="btn" href="roadmap.html" style="margin-top:16px;">View full roadmap &rarr;</a>
+      </div>
+
+      <div class="grid">
+        <div>
+          <div class="panel" id="watchPanel">
+            <h2>Watch control</h2>
+            <div class="sub">Starts once, then keeps re-scanning on its own until paused.</div>
+            <button class="btn block" id="startBtn">Start watch</button>
+            <button class="btn stop block hidden" id="stopBtn">Pause watch</button>
+            <a class="btn ghost block" href="survey.html">Edit survey answers</a>
+            <div class="radar-wrap"><div class="radar idle" id="radar"><div class="sweep"></div></div></div>
+            <div class="log" id="log"><div class="log-line"><span class="ts">--:--</span><span>Watch not started yet.</span></div></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="toolbar hidden" id="toolbar">
+            <input type="text" id="searchInput" placeholder="Filter by keyword...">
+            <div class="divider"></div>
+            <span class="sort-label">Sort</span>
+            <div class="chip-row" id="sortChips">
+              <div class="chip active" data-val="match">Match %</div>
+              <div class="chip" data-val="deadline">Deadline</div>
+            </div>
+            <div class="divider"></div>
+            <div class="chip-row" id="savedFilterChips"><div class="chip" data-val="saved">&#9733; Saved only</div></div>
+          </div>
+          <div class="results-head"><h2>Ranked matches</h2><div class="results-count" id="resultsCount">0 matches surfaced</div></div>
+          <div id="results">
+            <div class="empty-state"><div class="glyph">&#10022;</div>Start the watch to begin scanning.<div class="sub">Matches are ranked against your end goal, not just keyword overlap.</div></div>
+          </div>
+        </div>
+
+        <div class="insights-col">
+          <div class="panel">
+            <h2>Trajectory</h2>
+            <div class="sub">Average match strength per cycle.</div>
+            <svg class="trajectory-svg" id="trajectorySvg" viewBox="0 0 260 70" preserveAspectRatio="none"></svg>
+            <div class="mini-label"><span>Cycle 1</span><span id="trajLatest">-</span></div>
+          </div>
+          <div class="panel">
+            <h2>Mix this cycle</h2>
+            <div class="sub">Category breakdown of current matches.</div>
+            <div class="type-bar-row"><div class="type-bar-head"><span>Jobs</span><span id="pctJob">0%</span></div><div class="type-bar-track"><div class="type-bar-fill" id="barJob" style="width:0%; background:var(--gold);"></div></div></div>
+            <div class="type-bar-row"><div class="type-bar-head"><span>Internships</span><span id="pctIntern">0%</span></div><div class="type-bar-track"><div class="type-bar-fill" id="barIntern" style="width:0%; background:var(--aurora);"></div></div></div>
+            <div class="type-bar-row"><div class="type-bar-head"><span>College / Fellowship</span><span id="pctCollege">0%</span></div><div class="type-bar-track"><div class="type-bar-fill" id="barCollege" style="width:0%; background:var(--comet);"></div></div></div>
+            <div class="type-bar-row"><div class="type-bar-head"><span>Athletics</span><span id="pctAthletic">0%</span></div><div class="type-bar-track"><div class="type-bar-fill" id="barAthletic" style="width:0%; background:var(--violet);"></div></div></div>
+          </div>
+          <div class="panel">
+            <h2>Skill gaps</h2>
+            <div class="sub">Common in your top matches, not yet in your profile.</div>
+            <div id="gapTags"><span class="hint">Run a scan to see suggestions.</span></div>
+          </div>
+          <div class="panel">
+            <h2>Saved</h2>
+            <div class="sub">Starred listings from any cycle.</div>
+            <div id="savedList"><span class="hint">Nothing saved yet.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer>Velora is a demo - listings shown are illustrative, not live postings.</footer>
+</div>
+
+<script src="state.js"></script>
+<script src="charts.js"></script>
+<script>
+window.addEventListener("error", function(e){
+  var msg = "Script error: " + e.message + " (in " + (e.filename ? e.filename.split("/").pop() : "unknown file") + ", line " + e.lineno + ")";
+  showDiagBanner(msg);
+});
+function showDiagBanner(msg){
+  if(document.getElementById("diagBanner")) return;
+  var b = document.createElement("div");
+  b.id = "diagBanner";
+  b.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;background:#B91C1C;color:#fff;padding:14px 20px;font-family:monospace;font-size:13px;text-align:center;";
+  b.textContent = "Velora failed to load correctly - " + msg + " - check that all files (especially state.js and styles.css) are uploaded with these EXACT lowercase names to the same folder.";
+  document.body.prepend(b);
+}
+setTimeout(function(){
+  if(typeof renderNav === "undefined" || typeof veloraMark === "undefined"){
+    showDiagBanner("state.js did not load (its functions are undefined). Check the file exists, is named exactly state.js, and sits in the same folder as this page.");
+  }
+}, 800);
+</script>
+<script>
+initStarfield();
+renderNav('dashboard');
+localStorage.setItem('velora_role', 'candidate');
+
+const profile = getProfile();
+if(!profile){
+  document.getElementById('noProfile').classList.remove('hidden');
+} else {
+  document.getElementById('mainContent').classList.remove('hidden');
+}
+
+let watchInterval = null;
+let cycleCount = getCycleCount();
+let lastScored = getMatches();
+let trajectory = getTrajectory();
+let savedIds = getSavedIds();
+let priorSeen = new Set();
+let seenIds = new Set(lastScored.map(l=>l.id));
+
+const radar = document.getElementById('radar');
+const logEl = document.getElementById('log');
+const resultsEl = document.getElementById('results');
+const resultsCount = document.getElementById('resultsCount');
+const startBtn = document.getElementById('startBtn');
+const stopBtn = document.getElementById('stopBtn');
+
+function singleSelect(id){ document.getElementById(id).querySelectorAll('.chip').forEach(chip=>{ chip.addEventListener('click', ()=>{ chip.parentElement.querySelectorAll('.chip').forEach(c=>c.classList.remove('active')); chip.classList.add('active'); renderResults(); }); }); }
+function toggleSelect(id){ document.getElementById(id).querySelectorAll('.chip').forEach(chip=>{ chip.addEventListener('click', ()=>{ chip.classList.toggle('active'); renderResults(); }); }); }
+if(document.getElementById('sortChips')){ singleSelect('sortChips'); toggleSelect('savedFilterChips'); }
+function getActiveVals(id){ return Array.from(document.querySelectorAll('#'+id+' .chip.active')).map(c=>c.dataset.val); }
+if(document.getElementById('searchInput')) document.getElementById('searchInput').addEventListener('input', renderResults);
+
+function logLine(text, ts){
+  const line = document.createElement('div'); line.className = 'log-line';
+  line.innerHTML = `<span class="ts">${ts || new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span><span>${text}</span>`;
+  logEl.appendChild(line); logEl.scrollTop = logEl.scrollHeight;
+}
+const LOG_VERBS = ['Indexing new postings from', 'Cross-referencing your profile against', 'Re-ranking results from', 'Pulling fresh listings from', 'Checking deadlines on'];
+const LOG_SOURCES = ['university career boards', 'startup ATS feeds', 'fellowship databases', 'athletic scholarship boards', 'referral networks', 'company career pages'];
+
+if(startBtn){ startBtn.addEventListener('click', startWatch); stopBtn.addEventListener('click', stopWatch); }
+
+function startWatch(){
+  if(watchInterval || !profile) return;
+  document.getElementById('toolbar').classList.remove('hidden');
+  startBtn.classList.add('hidden'); stopBtn.classList.remove('hidden');
+  radar.classList.remove('idle');
+  localStorage.setItem('velora_watch_active', 'true');
+  renderNav('dashboard');
+  logEl.innerHTML = ''; logLine('Watch started. Running first scan...');
+  runCycle();
+  watchInterval = setInterval(runCycle, 14000);
+}
+function stopWatch(){
+  if(watchInterval){ clearInterval(watchInterval); watchInterval = null; }
+  radar.classList.add('idle');
+  localStorage.setItem('velora_watch_active', 'false');
+  renderNav('dashboard');
+  startBtn.classList.remove('hidden'); startBtn.textContent = 'Resume watch';
+  stopBtn.classList.add('hidden');
+  logLine('Watch paused.');
+}
+function runCycle(){
+  cycleCount++;
+  const nSteps = 3;
+  for(let i=0;i<nSteps;i++){
+    const verb = LOG_VERBS[(cycleCount+i) % LOG_VERBS.length];
+    const src = LOG_SOURCES[(cycleCount*3+i) % LOG_SOURCES.length];
+    setTimeout(()=> logLine(`${verb} ${src}`), i*300);
+  }
+  setTimeout(()=> executeScan(), nSteps*300 + 200);
+}
+async function executeScan(){
+  const scored = runMatchCycle(profile);
+  const freshCount = scored.filter(l=> !seenIds.has(l.id)).length;
+  logLine(`Cycle ${cycleCount} complete - ${scored.length} ranked, ${freshCount} new since last pass.`);
+  const avg = scored.length ? Math.round(scored.reduce((s,l)=>s+l.pct,0)/scored.length) : 0;
+  trajectory.push(avg); if(trajectory.length>10) trajectory.shift();
+  priorSeen = new Set(seenIds);
+  scored.forEach(l=> seenIds.add(l.id));
+  lastScored = scored;
+  saveCycleCount(cycleCount); saveTrajectory(trajectory); saveMatches(lastScored);
+  if(freshCount > 0){
+    const top = scored[0];
+    addNotification({ type: 'scan', title: `Cycle ${cycleCount}: ${freshCount} new match${freshCount>1?'es':''} found`, detail: top ? `Top match: ${top.title} at ${top.org} (${top.pct}%)` : '' });
+  }
+  updateSuccessStats(avg);
+  drawTrajectory(); drawTypeBreakdown(scored); drawSkillGaps(scored); renderResults();
+
+  const autoApplied = await runAutoApplyForMatches(scored, profile);
+  if(autoApplied.length > 0){
+    addNotification({ type: 'auto_apply', title: `Auto Apply: ${autoApplied.length} application${autoApplied.length>1?'s':''} auto-approved`, detail: autoApplied.map(a=>a.listing_title).join(', ') });
+  }
+}
+function seenBefore(id){ return priorSeen.has(id); }
+function parseDeadline(str){
+  const months = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+  const [mon, day] = str.split(' '); return new Date(2026, months[mon], parseInt(day)).getTime();
+}
+function ringSvg(pct, color){
+  const r=21, c=2*Math.PI*r, offset = c-(pct/100)*c;
+  return `<svg width="52" height="52" viewBox="0 0 52 52"><circle cx="26" cy="26" r="${r}" fill="none" stroke="var(--line)" stroke-width="4"/><circle cx="26" cy="26" r="${r}" fill="none" stroke="${color}" stroke-width="4" stroke-dasharray="${c}" stroke-dashoffset="${offset}" stroke-linecap="round"/></svg>`;
+}
+function updateSuccessStats(avg){
+  document.getElementById('statAvgMatch').textContent = avg + '%';
+  document.getElementById('statSavedCount').textContent = savedIds.size;
+  document.getElementById('statCyclesRun').textContent = cycleCount;
+}
+
+function renderApplicationBanner(){
+  const existing = document.getElementById('appToast');
+  if(existing) existing.remove();
+  const toast = document.createElement('div');
+  toast.id = 'appToast';
+  toast.className = 'app-toast';
+  toast.innerHTML = `AI application drafted - <a href="workshop.html">review it in the Workshop &rarr;</a>`;
+  document.body.appendChild(toast);
+  setTimeout(()=>{ toast.classList.add('show'); }, 10);
+  setTimeout(()=>{ toast.classList.remove('show'); setTimeout(()=> toast.remove(), 400); }, 6000);
+}
+
+function renderResults(){
+  if(!resultsEl) return;
+  if(!lastScored.length){
+    resultsEl.innerHTML = `<div class="empty-state"><div class="glyph">&#10022;</div>Start the watch to begin scanning.<div class="sub">Matches are ranked against your end goal, not just keyword overlap.</div></div>`;
+    resultsCount.textContent = '0 matches surfaced';
+    return;
+  }
+  let list = lastScored.slice();
+  const q = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+  if(q){ list = list.filter(l=> (l.title+' '+l.org+' '+l.tags.join(' ')).toLowerCase().includes(q)); }
+  const savedOnly = document.querySelector('#savedFilterChips .chip.active');
+  if(savedOnly){ list = list.filter(l=> savedIds.has(l.id)); }
+  const sortBy = getActiveVals('sortChips')[0] || 'match';
+  if(sortBy==='match'){ list.sort((a,b)=> b.pct-a.pct); } else { list.sort((a,b)=> parseDeadline(a.deadline)-parseDeadline(b.deadline)); }
+  resultsCount.textContent = `${list.length} matches surfaced - cycle ${cycleCount}`;
+  resultsEl.innerHTML = '';
+  if(list.length===0){ resultsEl.innerHTML = `<div class="empty-state"><div class="glyph">&#10022;</div>Nothing matches your current filter.<div class="sub">Clear the search or saved-only filter.</div></div>`; return; }
+
+  list.forEach((l, idx)=>{
+    const isNew = seenIds.has(l.id) && !seenBefore(l.id);
+    const isSaved = savedIds.has(l.id);
+    const color = l.pct>=75 ? 'var(--aurora)' : l.pct>=55 ? 'var(--gold)' : 'var(--text-faint)';
+    const card = document.createElement('div');
+    card.className = 'card' + (isSaved ? ' saved' : '');
+    card.style.animationDelay = (idx*0.05)+'s';
+    const roadmapForAlign = getRoadmap();
+    const roadmapAlign = computeRoadmapAlignment(l, roadmapForAlign ? roadmapForAlign.milestones : null);
+    const breakdownRows = [
+      {label:'Goal fit', tags:l.matchedGoal, color:'var(--gold)'},
+      {label:'Skill fit', tags:l.matchedSkill, color:'var(--aurora)'},
+      {label:'Other', tags:l.neutral, color:'var(--text-faint)'},
+    ].map(row=>{
+      const pct = Math.round((row.tags.length / Math.max(1,l.tags.length))*100);
+      return `<div class="breakdown-row"><div class="breakdown-label">${row.label}</div><div class="breakdown-bar-track"><div class="breakdown-bar-fill" style="width:${pct}%; background:${row.color};"></div></div><div class="breakdown-val">${pct}%</div></div>`;
+    }).join('');
+    card.innerHTML = `
+      <div class="card-body">
+        <div class="score-ring">${ringSvg(l.pct, color)}<span>${l.pct}%</span></div>
+        <div>
+          <div class="card-top">
+            <div><p class="card-title">${l.title}</p><div class="card-org">${l.org} - ${l.loc}</div></div>
+            <button class="icon-btn ${isSaved?'starred':''}" data-id="${l.id}" title="Save">&#9733;</button>
+          </div>
+          <div class="badges" style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
+            ${isNew ? '<span class="badge new">New</span>' : ''}
+            <span class="badge type-${l.type}">${typeBadgeLabel(l.type)}</span>
+            <span class="badge deadline">Due ${l.deadline}</span>
+          </div>
+          <p class="card-rationale">${l.rationale}</p>
+          ${roadmapAlign ? `<p class="card-roadmap-fit"><b>Advances your roadmap:</b> Stage ${roadmapAlign.stage} - ${roadmapAlign.title}</p>` : `<p class="card-roadmap-fit card-roadmap-fit-none">Doesn't clearly advance a specific roadmap stage - may still be worth a look.</p>`}
+          <div class="card-meta">Tags: ${l.tags.join(' - ')}</div>
+          <button class="card-toggle" data-id="detail-${l.id}"><span class="arrow">&#9656;</span> Why this score</button>
+          <div class="card-details" id="detail-${l.id}"><div class="card-details-inner">${breakdownRows}</div></div>
+        </div>
+      </div>`;
+    resultsEl.appendChild(card);
+  });
+  resultsEl.querySelectorAll('.icon-btn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = parseInt(btn.dataset.id);
+      const wasStarred = savedIds.has(id);
+      if(wasStarred) savedIds.delete(id); else savedIds.add(id);
+      saveSavedIds(savedIds);
+      document.getElementById('statSavedCount').textContent = savedIds.size;
+      drawSavedList(); renderResults();
+
+      if(!wasStarred){
+        const listing = lastScored.find(l => l.id === id);
+        if(listing){
+          btn.disabled = true;
+          const app = await createApplicationForMatch(listing, profile);
+          btn.disabled = false;
+          if(app && !app.already_existed){
+            renderApplicationBanner();
+          }
+        }
+      }
+    });
+  });
+  resultsEl.querySelectorAll('.card-toggle').forEach(btn=>{
+    btn.addEventListener('click', ()=>{ document.getElementById(btn.dataset.id).classList.toggle('open'); btn.classList.toggle('open'); });
+  });
+}
+
+function drawTrajectory(){
+  const svg = document.getElementById('trajectorySvg');
+  const w = 260, h = 70, pad = 8;
+  if(trajectory.length===0){ svg.innerHTML=''; return; }
+  const stepX = trajectory.length>1 ? (w-pad*2)/(trajectory.length-1) : 0;
+  const pts = trajectory.map((v,i)=> [pad + i*stepX, h - pad - (v/100)*(h-pad*2)]);
+  const line = pts.map(p=>p.join(',')).join(' ');
+  const areaPath = `M${pad},${h-pad} L` + pts.map(p=>p.join(',')).join(' L') + ` L${pts[pts.length-1][0]},${h-pad} Z`;
+  svg.innerHTML = `<defs><linearGradient id="trajFade" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#F0B24E" stop-opacity="0.3"/><stop offset="100%" stop-color="#F0B24E" stop-opacity="0"/></linearGradient></defs>
+    <path d="${areaPath}" fill="url(#trajFade)" stroke="none"/>
+    <polyline points="${line}" fill="none" stroke="#F0B24E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    ${pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="2.4" fill="#F0B24E"/>`).join('')}`;
+  document.getElementById('trajLatest').textContent = `Cycle ${trajectory.length} - ${trajectory[trajectory.length-1]}%`;
+}
+function drawTypeBreakdown(scored){
+  const total = scored.length || 1;
+  const jobs = scored.filter(l=>l.type==='job').length, interns = scored.filter(l=>l.type==='internship').length, college = scored.filter(l=>l.type==='college').length, athletic = scored.filter(l=>l.type==='athletic').length;
+  const pJ = Math.round(jobs/total*100), pI = Math.round(interns/total*100), pC = Math.round(college/total*100), pA = Math.round(athletic/total*100);
+  document.getElementById('barJob').style.width = pJ+'%'; document.getElementById('barIntern').style.width = pI+'%'; document.getElementById('barCollege').style.width = pC+'%'; document.getElementById('barAthletic').style.width = pA+'%';
+  document.getElementById('pctJob').textContent = pJ+'%'; document.getElementById('pctIntern').textContent = pI+'%'; document.getElementById('pctCollege').textContent = pC+'%'; document.getElementById('pctAthletic').textContent = pA+'%';
+}
+function drawSkillGaps(scored){
+  const skillTokens = tokenize(profile.skills), goalTokens = tokenize(profile.northstar + ' ' + profile.finalidea);
+  const freq = {};
+  scored.slice(0,6).forEach(l=> l.tags.forEach(tag=>{
+    const known = skillTokens.some(t=> tag.includes(t)||t.includes(tag)) || goalTokens.some(t=> tag.includes(t)||t.includes(tag));
+    if(!known) freq[tag] = (freq[tag]||0)+1;
+  }));
+  const top = Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,4);
+  const el = document.getElementById('gapTags');
+  el.innerHTML = top.length===0 ? `<span class="hint">Your profile already covers what's showing up.</span>` : top.map(([tag,count])=>`<span class="gap-tag"><b>${tag}</b> x${count}</span>`).join('');
+}
+function drawSavedList(){
+  const el = document.getElementById('savedList');
+  if(savedIds.size===0){ el.innerHTML = `<span class="hint">Nothing saved yet.</span>`; return; }
+  const items = LISTINGS.filter(l=> savedIds.has(l.id));
+  const scoredById = {}; lastScored.forEach(l=> scoredById[l.id]=l.pct);
+  el.innerHTML = items.map(l=> `<div class="saved-mini"><span>${l.title}</span><span class="pct">${scoredById[l.id]!==undefined ? scoredById[l.id]+'%' : ''}</span></div>`).join('');
+}
+function computeSkillGapsForRoadmap(){
+  if(!lastScored.length) return [];
+  const skillTokens = tokenize(profile.skills || '');
+  const goalTokens = tokenize(profile.northstar + ' ' + profile.finalidea);
+  const freq = {};
+  lastScored.slice(0,8).forEach(l => l.tags.forEach(tag => {
+    const known = skillTokens.some(t => tag.includes(t) || t.includes(tag)) || goalTokens.some(t => tag.includes(t) || t.includes(tag));
+    if(!known) freq[tag] = (freq[tag] || 0) + 1;
+  }));
+  return Object.entries(freq).sort((a,b) => b[1]-a[1]).slice(0,4).map(([tag]) => tag);
+}
+
+function renderRoadmap(){
+  let roadmap = getRoadmap();
+  if(!roadmap){
+    const skillGaps = computeSkillGapsForRoadmap();
+    const topMatch = lastScored.length ? lastScored[0] : null;
+    roadmap = generateRoadmapLocal(profile, skillGaps, topMatch);
+    saveRoadmap(roadmap);
+  }
+  const preview = document.getElementById('roadmapPreview');
+  if(!preview) return;
+  const milestones = roadmap.milestones || [];
+  const next = milestones.find(m => m.status !== 'done') || milestones[0];
+  const doneCount = milestones.filter(m => m.status === 'done').length;
+  if(!next){ preview.innerHTML = `<p class="hint">No roadmap yet.</p>`; return; }
+  preview.innerHTML = `
+    <div class="roadmap-progress-mini">
+      <div class="roadmap-progress-track"><div class="roadmap-progress-fill" style="width:${Math.round((doneCount/milestones.length)*100)}%;"></div></div>
+      <span class="roadmap-progress-label">${doneCount} of ${milestones.length} stages complete</span>
+    </div>
+    <div class="roadmap-next-preview">
+      <span class="roadmap-stage-badge">Stage ${next.stage}</span>
+      <h4>${next.title}</h4>
+      <p>${next.description}</p>
+    </div>`;
+}
+
+function renderCandidateCharts(){
+  const outcomes = seedOutcomesIfEmpty();
+  const statusColors = { offer: 'var(--aurora)', interview: 'var(--comet)', applied: 'var(--gold)', rejected: 'var(--danger)', ghosted: 'var(--text-faint)' };
+  const statusLabels = { offer: 'Offers', interview: 'Interviews', applied: 'Applied (pending)', rejected: 'Rejected', ghosted: 'Ghosted' };
+  const counts = {};
+  outcomes.forEach(o => { counts[o.status] = (counts[o.status] || 0) + 1; });
+  const segments = Object.keys(statusLabels).filter(k => counts[k]).map(k => ({ label: statusLabels[k], value: counts[k], color: statusColors[k] }));
+  document.getElementById('outcomeDonut').innerHTML = donutChart(segments, 130, 18) + donutLegend(segments);
+
+  const roadmapData = getRoadmap();
+  const roadmapMilestones = roadmapData ? roadmapData.milestones : [];
+  const roadmapDone = roadmapMilestones.filter(m => m.status === 'done').length;
+  const roadmapProgress = roadmapMilestones.length ? Math.round((roadmapDone / roadmapMilestones.length) * 100) : 0;
+  const skillTokens = tokenize(profile.skills || '');
+  const skillStrength = Math.min(100, skillTokens.length * 8);
+  const matchQuality = lastScored.length ? Math.round(lastScored.reduce((s,l)=>s+l.pct,0)/lastScored.length) : 40;
+  const potential = Math.round((roadmapProgress * 0.3) + (skillStrength * 0.3) + (matchQuality * 0.4));
+  document.getElementById('potentialGauge').innerHTML = gaugeChart(potential, 130, 'var(--gold)') +
+    `<div class="gauge-value">${potential}</div><div class="gauge-label">Potential score</div>`;
+
+  const months = ['Jun', 'Jul', 'Aug'];
+  const targetPerMonth = 8;
+  const monthly = monthlyTargetData(outcomes, targetPerMonth, months);
+  document.getElementById('monthlyTargetChart').innerHTML = barChart(monthly, {width: 400, height: 130});
+  const totalActual = monthly.reduce((s,m)=>s+m.actual, 0);
+  const totalTarget = monthly.reduce((s,m)=>s+m.target, 0);
+  const pctOfTarget = Math.round((totalActual/totalTarget)*100);
+  document.getElementById('targetSummary').innerHTML = `<span>Applications sent: <b>${totalActual}</b> of ${totalTarget} targeted</span><span>Pace: <b>${pctOfTarget}%</b> of target</span>`;
+}
+
+if(profile){
+  renderRoadmap();
+  renderCandidateCharts();
+  if(lastScored.length){
+    document.getElementById('toolbar').classList.remove('hidden');
+    resultsCount.textContent = `${lastScored.length} matches surfaced - cycle ${cycleCount}`;
+    const avg = trajectory.length ? trajectory[trajectory.length-1] : 0;
+    updateSuccessStats(avg);
+    drawTrajectory(); drawTypeBreakdown(lastScored); drawSkillGaps(lastScored); drawSavedList(); renderResults();
+    if(localStorage.getItem('velora_watch_active') === 'true'){
+      startBtn.classList.add('hidden'); stopBtn.classList.remove('hidden'); radar.classList.remove('idle');
+      logLine('Resumed - watch continues from where you left off.');
+      watchInterval = setInterval(runCycle, 14000);
+    }
+  } else {
+    updateSuccessStats(0);
+  }
+
+  injectMetisWidget(function(){
+    let ctx = `You are Metis, the built-in career guide inside "Velora", an internship/job/college/athletics opportunity watch app. Answer questions about internships, job searching, applications, resumes, cover letters, outreach, and career strategy. Be concise, practical, and warm. Use **bold** sparingly and "- " for bullet lists.\n\n`;
+    ctx += `The user's goal: "${profile.northstar}". Timeframe: ${profile.timeframe}. Stage: ${profile.stage}. Skills: "${profile.skills}".\n\n`;
+    if(lastScored && lastScored.length){
+      ctx += `Their current top matches:\n`;
+      lastScored.slice(0,8).forEach(l=>{ ctx += `- ${l.title} - ${l.org} - ${typeBadgeLabel(l.type)} - ${l.pct}% match - due ${l.deadline}\n`; });
+    }
+    const roadmap = getRoadmap();
+    if(roadmap && roadmap.milestones){
+      ctx += `\nTheir roadmap strategy: ${roadmap.summary}\nStages:\n`;
+      roadmap.milestones.forEach(s=> ctx += `${s.stage}. ${s.title} (${s.status}): ${s.description}\n`);
+    }
+    ctx += `\nAll listings are illustrative demo data, not live postings.`;
+    return ctx;
+  });
+}
+</script>
+</body>
+</html>
