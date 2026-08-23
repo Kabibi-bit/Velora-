@@ -1,4 +1,3 @@
-
 /* ============ VELORA SHARED CORE ============ */
  
 /* ---- Logo mark: guiding star, navy + gold ---- */
@@ -175,7 +174,18 @@ async function createApplicationForMatch(listing, profile){
  
   return application;
 }
-function getRoadmap(){ try{ return JSON.parse(localStorage.getItem('velora_roadmap')); }catch(e){ return null; } }
+function getRoadmap(){
+  try{
+    const raw = JSON.parse(localStorage.getItem('velora_roadmap'));
+    if(!raw) return null;
+    // Old format (before the summary+milestones restructure) stored a
+    // bare array. Treat that, or anything missing .milestones, as if
+    // there's no roadmap yet - the caller will regenerate a fresh one
+    // in the current format instead of crashing on the old shape.
+    if(Array.isArray(raw) || !raw.milestones) return null;
+    return raw;
+  }catch(e){ return null; }
+}
 function saveRoadmap(r){ localStorage.setItem('velora_roadmap', JSON.stringify(r)); }
 function getOutcomes(){ try{ return JSON.parse(localStorage.getItem('velora_outcomes')) || []; }catch(e){ return []; } }
 function saveOutcomes(o){ localStorage.setItem('velora_outcomes', JSON.stringify(o)); }
@@ -523,4 +533,3 @@ function injectMetisWidget(systemContextFn){
     } finally { chatSend.disabled = false; }
   }
 }
- 
