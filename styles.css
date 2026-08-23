@@ -202,3 +202,13 @@ footer{ margin-top: 64px; padding: 32px 0; border-top: 1px solid var(--line-soft
 .target-summary{ font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--text-dim); margin-top: 12px; display:flex; gap: 16px; }
 .target-summary span b{ color: var(--aurora); }
  
+/* ============ TOAST NOTIFICATION ============ */
+.app-toast{
+  position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--panel); border: 1px solid var(--gold); border-radius: 999px;
+  padding: 12px 22px; font-family:'Manrope', sans-serif; font-size: 13.5px; color: var(--text);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.5); z-index: 70; opacity: 0; transition: all .3s ease;
+}
+.app-toast.show{ opacity: 1; transform: translateX(-50%) translateY(0); }
+.app-toast a{ color: var(--gold); font-weight: 700; }
+ 
