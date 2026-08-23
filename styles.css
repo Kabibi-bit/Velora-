@@ -179,6 +179,15 @@ footer{ margin-top: 64px; padding: 32px 0; border-top: 1px solid var(--line-soft
 .roadmap-timeframe{ font-family:'JetBrains Mono', monospace; font-size: 10px; color: var(--gold); border: 1px solid rgba(240,178,78,0.35); background: var(--gold-dim); padding: 3px 9px; border-radius: 999px; }
 .roadmap-stage-badge{ font-family:'JetBrains Mono', monospace; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-faint); }
  
+/* ============ ROADMAP PREVIEW (dashboard condensed card) ============ */
+.roadmap-progress-mini{ display:flex; align-items:center; gap: 12px; margin-bottom: 16px; }
+.roadmap-progress-track{ flex:1; height: 8px; background: var(--line-soft); border-radius: 999px; overflow: hidden; }
+.roadmap-progress-fill{ height:100%; background: linear-gradient(90deg, var(--aurora), var(--gold)); border-radius: 999px; }
+.roadmap-progress-label{ font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+.roadmap-next-preview{ background: var(--void); border: 1px solid var(--line-soft); border-radius: 10px; padding: 16px; }
+.roadmap-next-preview h4{ font-family:'Space Grotesk', sans-serif; font-size: 15px; margin: 6px 0 6px; color: var(--text); }
+.roadmap-next-preview p{ font-family:'Manrope', sans-serif; font-size: 13px; color: var(--text-dim); margin: 0; line-height: 1.5; }
+ 
 .stat-row{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .stat-box{ background: var(--void); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px; }
 .stat-box .snum{ font-family:'Space Grotesk', sans-serif; font-weight: 700; font-size: 24px; color: var(--text); }
