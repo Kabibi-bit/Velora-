@@ -189,43 +189,142 @@ function runMatchCycle(profile){
 }
 function typeBadgeLabel(t){ return t==='job'?'Job':t==='internship'?'Internship':t==='athletic'?'Athletics':'College / Fellowship'; }
  
-/* ---- Roadmap generation (client-side heuristic mirroring the backend's design) ---- */
-function generateRoadmapLocal(profile, skillGaps){
+/* ---- Roadmap generation (client-side, personalized with real match data) ---- */
+function generateRoadmapLocal(profile, skillGaps, topMatch){
   skillGaps = skillGaps || [];
   const stage = profile.stage;
   const goalPhrase = profile.northstar.split(/[.,;]/)[0];
   const finalPhrase = (profile.finalidea || '').split(/[.,;]/)[0] || goalPhrase;
   const gapSkill = skillGaps[0];
+  const gapSkill2 = skillGaps[1];
+  const priorityText = (profile.priorities || []).join(' and ') || 'fit';
+  const locText = profile.loc || 'your target location';
   const steps = [];
  
+  const matchLine = topMatch
+    ? `Your current top match is "${topMatch.title}" at ${topMatch.org} (${topMatch.pct}% fit) - start there.`
+    : `Run a scan on the Job Search page first so this step can point at a real listing instead of a placeholder.`;
+  const matchFirstAction = topMatch
+    ? `Today: open "${topMatch.title}" at ${topMatch.org} on your Job Search page and read the full listing - decide within 24 hours whether to apply.`
+    : `Today: go to Job Search and click "Start watch" so real listings start showing up here.`;
+ 
   if(stage === 'student'){
-    steps.push({title: `Ship a concrete project tied to "${goalPhrase}"`, description: 'A finished, specific project beats a generic resume line at this stage - pick something you can point to and explain in an interview.', success_criteria: 'You have a live link, repo, or writeup you can share in an application.', estimated_timeframe: '2-4 weeks'});
+    steps.push({
+      title: `Ship one project that directly demonstrates "${goalPhrase}"`,
+      description: `Not a class assignment - something you chose, built, and can defend in an interview. It should use the specific skills your target roles ask for, not generic ones.`,
+      success_criteria: 'You have a live link, repo, or writeup you would actually be comfortable sending to a stranger.',
+      estimated_timeframe: '2-4 weeks',
+      first_action: 'Today: write down the exact project idea in one sentence and pick the single dataset, tool, or problem you will use.',
+    });
     if(gapSkill){
-      steps.push({title: `Close the ${gapSkill} gap`, description: `This shows up often in listings that match your goal but isn't in your stated skills yet.`, success_criteria: `You can describe a real example of using ${gapSkill}, not just that you've "learned" it.`, estimated_timeframe: '3-6 weeks'});
+      steps.push({
+        title: `Get hands-on with ${gapSkill}${gapSkill2 ? ' and ' + gapSkill2 : ''}`,
+        description: `These show up repeatedly in listings that match "${goalPhrase}" but aren't in what you told us about your skills - this is the single highest-leverage gap to close right now.`,
+        success_criteria: `You can walk someone through one real example of using ${gapSkill}, not just say you've "studied" it.`,
+        estimated_timeframe: '3-6 weeks',
+        first_action: `Today: find one free tutorial or real dataset involving ${gapSkill} and complete the first concrete exercise, not just watch an overview.`,
+      });
     }
-    steps.push({title: 'Land a relevant internship', description: 'Use the Job Search watch to find internships matching your stated skills and goal - apply to your highest-scored matches first.', success_criteria: 'You have an internship offer or are past first-round interviews at 2+ places.', estimated_timeframe: '1-3 months'});
-    steps.push({title: 'Convert experience into a full-time offer', description: `Target APM/new-grad style programs at companies similar to where you interned, aimed at "${finalPhrase}".`, success_criteria: 'You have a signed offer or are in final rounds.', estimated_timeframe: '2-4 months'});
+    steps.push({
+      title: `Apply to your top ${priorityText}-scoring internship matches`,
+      description: `${matchLine} Prioritize matches scoring 65%+ over lower ones - fit compounds, volume doesn't.`,
+      success_criteria: 'You have applied to at least 5 internships scoring 60%+ and heard back from at least 1.',
+      estimated_timeframe: '1-3 months',
+      first_action: matchFirstAction,
+    });
+    steps.push({
+      title: `Convert your internship into a full-time offer near "${finalPhrase}"`,
+      description: `Target new-grad programs at companies similar to wherever you land your internship - proven internal performance is the strongest signal you can build.`,
+      success_criteria: 'You have a signed offer, or are in final-round interviews at 2+ places.',
+      estimated_timeframe: '2-4 months',
+      first_action: 'Once your internship starts: identify the one metric your manager cares about most and make visible progress on it in your first 30 days.',
+    });
   } else if(stage === 'grad'){
-    steps.push({title: 'Rewrite your resume around 3 strongest outcomes', description: 'Lead with results, not responsibilities - each bullet should have a number or a concrete before/after.', success_criteria: 'A peer or mentor can read your resume in 30 seconds and state your strongest qualification back to you.', estimated_timeframe: '1 week'});
+    steps.push({
+      title: 'Rewrite your resume around your 3 strongest, most specific outcomes',
+      description: `Every bullet should have a number or a before/after - "improved X by Y%" beats "responsible for X" every time.`,
+      success_criteria: 'A friend can read your resume for 30 seconds and correctly state your strongest qualification back to you.',
+      estimated_timeframe: '1 week',
+      first_action: 'Today: pick your single best accomplishment and rewrite it with a specific number attached.',
+    });
     if(gapSkill){
-      steps.push({title: `Close the ${gapSkill} gap`, description: `This shows up often in listings matching your goal but isn't reflected in your resume yet.`, success_criteria: `You can point to one concrete example using ${gapSkill}.`, estimated_timeframe: '3-4 weeks'});
+      steps.push({
+        title: `Close the ${gapSkill} gap before it costs you interviews`,
+        description: `This shows up often in listings matching "${goalPhrase}" but isn't reflected anywhere in your current resume or skills.`,
+        success_criteria: `You have one concrete example of using ${gapSkill} you could describe in an interview.`,
+        estimated_timeframe: '3-4 weeks',
+        first_action: `Today: find one small, real task involving ${gapSkill} you could complete this week.`,
+      });
     }
-    steps.push({title: 'Target entry-level roles matching your goal', description: 'Prioritize roles the watch scores highly on goal-fit, not just skill-fit - fit compounds faster than title.', success_criteria: 'You are actively interviewing at 3+ roles that score 70%+ match.', estimated_timeframe: '1-2 months'});
-    steps.push({title: 'Build a track record in your first 12 months', description: `The fastest path to "${finalPhrase}" is proving you can do the current job well first.`, success_criteria: 'You have a documented win from your first year you could cite in a promotion or next-job conversation.', estimated_timeframe: '12 months'});
+    steps.push({
+      title: `Apply to entry-level roles matching "${goalPhrase}", prioritized by fit not title`,
+      description: `${matchLine} A 70%+ goal-fit role at a smaller company usually beats a 40%-fit role at a bigger name.`,
+      success_criteria: 'You are actively interviewing at 3+ roles scoring 70%+ match.',
+      estimated_timeframe: '1-2 months',
+      first_action: matchFirstAction,
+    });
+    steps.push({
+      title: `Build one documented win in your first 12 months toward "${finalPhrase}"`,
+      description: 'The fastest route to your long-term goal is proving you can do the current job well first - not skipping ahead.',
+      success_criteria: 'You have one specific, quantified accomplishment you could cite in a promotion or next-job conversation.',
+      estimated_timeframe: '12 months',
+      first_action: 'In your first week on the job: ask your manager directly what success looks like in 90 days, in their own words.',
+    });
   } else if(stage === 'switch'){
-    steps.push({title: 'Map your transferable skills explicitly', description: 'Write out what you already know in the language of your target field, not your old one.', success_criteria: 'You have a one-paragraph pitch explaining your background in terms your target field would recognize.', estimated_timeframe: '1 week'});
+    steps.push({
+      title: `Write a one-paragraph pitch translating your background into "${goalPhrase}" language`,
+      description: 'Your existing experience is an asset, but only if it\'s described in terms your target field recognizes - not your old field\'s jargon.',
+      success_criteria: 'You can say this pitch out loud in under 30 seconds without sounding rehearsed.',
+      estimated_timeframe: '1 week',
+      first_action: 'Today: write 3 bullet points translating your most relevant past work into your target field\'s terms.',
+    });
     if(gapSkill){
-      steps.push({title: `Close the ${gapSkill} credibility gap`, description: `This is a common requirement in your target listings that your current background doesn't yet demonstrate.`, success_criteria: `You've completed a project, course, or task that used ${gapSkill} for real.`, estimated_timeframe: '4-8 weeks'});
+      steps.push({
+        title: `Close the ${gapSkill} credibility gap with one real project`,
+        description: `This is a common requirement in listings matching "${goalPhrase}" that your current background doesn't yet demonstrate on paper.`,
+        success_criteria: `You've completed one project, course, or task that used ${gapSkill} for real, not just watched a tutorial.`,
+        estimated_timeframe: '4-8 weeks',
+        first_action: `Today: find one real (not toy) problem you could solve using ${gapSkill} and start it this week.`,
+      });
     }
-    steps.push({title: 'Prove it with one small, real project', description: 'A short project, certificate, or contract that proves you can operate in the new domain closes more doors than credentials alone.', success_criteria: 'You have one artifact you can show a hiring manager as evidence, not just a claim.', estimated_timeframe: '3-6 weeks'});
-    steps.push({title: 'Make the switch through an adjacent role', description: `A hybrid role bridging your old and new field is usually an easier first step than a pure jump into "${finalPhrase}".`, success_criteria: 'You have an offer or serious interest in a role that touches both fields.', estimated_timeframe: '2-4 months'});
+    steps.push({
+      title: `Apply to roles bridging your old field and "${finalPhrase}"`,
+      description: `${matchLine} A hybrid role is usually an easier first step than a pure jump - it lets your existing experience count for something.`,
+      success_criteria: 'You have an offer, or serious interest, in a role touching both your old and new field.',
+      estimated_timeframe: '2-4 months',
+      first_action: matchFirstAction,
+    });
   } else {
-    steps.push({title: `Get specific about what "${finalPhrase}" means in practice`, description: 'Vague goals produce vague plans - name the actual title, team, or scope you\'re aiming at.', success_criteria: 'You can describe the target role/outcome in one concrete sentence.', estimated_timeframe: '1 week'});
+    steps.push({
+      title: `Turn "${finalPhrase}" into a specific, named target`,
+      description: `Vague goals produce vague plans - name the actual title, team, or scope you're aiming at in ${locText}, not just a direction.`,
+      success_criteria: 'You can describe your target role or outcome in one concrete sentence, with a real title attached.',
+      estimated_timeframe: '1 week',
+      first_action: 'Today: write down the exact job title or outcome you\'re aiming for - if you can\'t name one, that\'s the actual first problem to solve.',
+    });
     if(gapSkill){
-      steps.push({title: `Build visible strength in ${gapSkill}`, description: `This shows up often in opportunities matching your goal - closing it makes the next step credible.`, success_criteria: `You have one concrete example of using ${gapSkill} you could cite.`, estimated_timeframe: '3-6 weeks'});
+      steps.push({
+        title: `Build visible, provable strength in ${gapSkill}`,
+        description: `This shows up often in opportunities matching "${goalPhrase}" - closing it makes your next move credible instead of aspirational.`,
+        success_criteria: `You have one concrete, recent example of using ${gapSkill} you could cite today.`,
+        estimated_timeframe: '3-6 weeks',
+        first_action: `Today: identify one visible task at your current job or a side project where you could apply ${gapSkill} this month.`,
+      });
     }
-    steps.push({title: 'Build visibility internally or externally', description: 'Take on work that makes the next step obvious to decision-makers, rather than waiting to be noticed.', success_criteria: 'Someone with influence over your next step has proactively mentioned your progress.', estimated_timeframe: '1-2 months'});
-    steps.push({title: 'Make the move', description: 'Apply, pitch, or negotiate the transition once the groundwork above is in place.', success_criteria: 'You have made the ask, formally, to the person or process that controls the decision.', estimated_timeframe: '2-4 weeks'});
+    steps.push({
+      title: 'Make your progress visible to the person who controls your next step',
+      description: 'Take on work that makes the next move obvious to decision-makers, rather than waiting to be noticed.',
+      success_criteria: 'Someone with real influence over your next step has proactively mentioned your progress, unprompted.',
+      estimated_timeframe: '1-2 months',
+      first_action: 'This week: identify exactly who decides your next move, and find one legitimate reason to update them on progress.',
+    });
+    steps.push({
+      title: `Make the ask for "${finalPhrase}"`,
+      description: 'Apply, pitch, or negotiate the transition once the groundwork above is actually in place - not before.',
+      success_criteria: 'You have formally made the ask to the person or process that controls the decision.',
+      estimated_timeframe: '2-4 weeks',
+      first_action: 'Once ready: schedule the actual conversation or submit the actual application - put a date on the calendar now, not "soon".',
+    });
   }
   return steps.map((s, i) => ({...s, stage: i + 1}));
 }
