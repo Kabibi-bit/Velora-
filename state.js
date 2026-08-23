@@ -73,6 +73,7 @@ function renderNav(activePage){
     links = [
       {id: 'survey', label: 'Survey', href: 'survey.html'},
       {id: 'dashboard', label: 'Job Search', href: 'dashboard.html'},
+      {id: 'workshop', label: 'Workshop', href: 'workshop.html'},
       {id: 'inbox', label: 'Inbox', href: 'inbox.html'},
     ];
   }
@@ -109,6 +110,68 @@ function addNotification(note){
   const list = getNotifications();
   list.unshift({ ...note, id: Date.now() + Math.random(), ts: new Date().toISOString() });
   localStorage.setItem('velora_notifications', JSON.stringify(list.slice(0, 50)));
+}
+ 
+/* ---- Applications / Workshop ---- */
+const AUTO_APPLY_THRESHOLD = 80;
+const UNDO_WINDOW_MINUTES = 30;
+ 
+function getApplications(){ try{ return JSON.parse(localStorage.getItem('velora_applications')) || []; }catch(e){ return []; } }
+function saveApplications(apps){ localStorage.setItem('velora_applications', JSON.stringify(apps)); }
+function getApplicationForListing(listingId){ return getApplications().find(a => a.listing_id === listingId); }
+ 
+async function draftApplicationForMatch(listing, profile){
+  const prompt = `Write a short, tailored cover-letter-style paragraph (120-180 words) for this listing: "${listing.title}" at ${listing.org}.\nCandidate's goal: "${profile.northstar}"\nCandidate's skills: "${profile.skills}"\nBe concrete and specific, no generic filler, no placeholder brackets.`;
+  try{
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 400, messages: [{role: "user", content: prompt}] })
+    });
+    const data = await response.json();
+    const text = (data.content || []).map(b => b.type === 'text' ? b.text : '').filter(Boolean).join('\n');
+    return text || null;
+  } catch(err){
+    console.error('Draft generation failed:', err);
+    return null;
+  }
+}
+ 
+async function createApplicationForMatch(listing, profile){
+  const existing = getApplicationForListing(String(listing.id));
+  if(existing) return existing;
+ 
+  const draftText = await draftApplicationForMatch(listing, profile);
+  if(!draftText) return null;
+ 
+  const status = listing.pct >= AUTO_APPLY_THRESHOLD ? 'approved' : 'pending_review';
+  const sendableAt = status === 'approved' ? new Date(Date.now() + UNDO_WINDOW_MINUTES * 60000).toISOString() : null;
+ 
+  const application = {
+    id: 'app_' + Date.now() + '_' + Math.random().toString(36).slice(2,8),
+    listing_id: String(listing.id),
+    listing_title: listing.title,
+    listing_org: listing.org,
+    listing_type: listing.type,
+    confidence_pct: listing.pct,
+    draft: draftText,
+    status,
+    sendable_at: sendableAt,
+    sent_at: null,
+    created_at: new Date().toISOString(),
+  };
+ 
+  const apps = getApplications();
+  apps.unshift(application);
+  saveApplications(apps);
+ 
+  addNotification({
+    type: 'application',
+    title: `Draft ready: ${listing.title}`,
+    detail: `${status === 'approved' ? 'Auto-approved' : 'Needs your review'} - ${listing.pct}% match. Check the Workshop.`,
+  });
+ 
+  return application;
 }
 function getRoadmap(){ try{ return JSON.parse(localStorage.getItem('velora_roadmap')); }catch(e){ return null; } }
 function saveRoadmap(r){ localStorage.setItem('velora_roadmap', JSON.stringify(r)); }
