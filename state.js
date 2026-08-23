@@ -211,6 +211,40 @@ async function runAutoApplyForMatches(matches, profile){
   }
   return results;
 }
+/* ---- Deep, on-demand match explanation (real Claude call, cached per listing) ---- */
+function getDeepExplanations(){ try{ return JSON.parse(localStorage.getItem('velora_deep_explanations')) || {}; }catch(e){ return {}; } }
+function saveDeepExplanation(listingId, text){
+  const all = getDeepExplanations();
+  all[listingId] = text;
+  localStorage.setItem('velora_deep_explanations', JSON.stringify(all));
+}
+function getCachedDeepExplanation(listingId){ return getDeepExplanations()[listingId] || null; }
+ 
+async function fetchDeepExplanation(listing, profile, roadmap){
+  const cached = getCachedDeepExplanation(String(listing.id));
+  if(cached) return cached;
+ 
+  const roadmapLine = roadmap && roadmap.milestones
+    ? `Their roadmap:\n${roadmap.milestones.map(m => `${m.stage}. ${m.title}`).join('\n')}\n\n`
+    : '';
+  const prompt = `A candidate's goal: "${profile.northstar}". What "made it" looks like: "${profile.finalidea || ''}". Their skills: "${profile.skills}". What matters most to them: ${(profile.priorities||[]).join(', ')}. Location preference: "${profile.loc || ''}".\n\n${roadmapLine}A listing they're considering: "${listing.title}" at ${listing.org} (${listing.type}), location ${listing.loc || 'unspecified'}, tags: ${listing.tags.join(', ')}.\n\nWrite a genuine, specific 3-4 sentence case for why this is or isn't a strong match for THIS candidate specifically - reference their actual goal, skills, priorities, and roadmap by name where relevant. Be honest about weak fit if it's weak, don't oversell. No generic filler - every sentence should reference a specific fact about the candidate or the listing.`;
+ 
+  try{
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 300, messages: [{role: "user", content: prompt}] })
+    });
+    const data = await response.json();
+    const text = (data.content || []).map(b => b.type === 'text' ? b.text : '').filter(Boolean).join('\n');
+    if(text) saveDeepExplanation(String(listing.id), text);
+    return text || null;
+  } catch(err){
+    console.error('Deep explanation failed:', err);
+    return null;
+  }
+}
+ 
 function getRoadmap(){
   try{
     const raw = JSON.parse(localStorage.getItem('velora_roadmap'));
@@ -278,14 +312,66 @@ function scoreListing(listing, goalTokens, skillTokens, priorities, dealbreakers
   const pct = Math.max(35, Math.min(97, Math.round((score / (tagSet.length*3+2)) * 100)));
   return {score, pct, matchedGoal:[...new Set(matchedGoal)], matchedSkill:[...new Set(matchedSkill)], neutral:[...new Set(neutral)]};
 }
+function parseDeadline(str){
+  const months = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+  const [mon, day] = str.split(' '); return new Date(2026, months[mon], parseInt(day)).getTime();
+}
+ 
 function buildRationale(listing, m, profile){
   const goalPhrase = (profile.northstar.split(/[.,;]/)[0] || 'your goal').toLowerCase();
+  const clauses = [];
+ 
   if(m.matchedGoal.length){
-    return `Lines up with <b>${goalPhrase}</b> - overlaps on ${m.matchedGoal.slice(0,2).join(' and ')}${m.matchedSkill.length? ', and draws on your background in '+m.matchedSkill.slice(0,2).join(', ')+'.' : ', a credible step toward that.'}`;
-  } else if(m.matchedSkill.length){
-    return `Skills match on <b>${m.matchedSkill.slice(0,2).join(', ')}</b> - a reasonable stepping stone even if it's not a direct line to "${goalPhrase}".`;
+    clauses.push(`directly touches <b>${m.matchedGoal.slice(0,2).join(', ')}</b> from your stated goal of ${goalPhrase}`);
   }
-  return `Looser fit - worth a glance while broadening this cycle's search.`;
+  if(m.matchedSkill.length){
+    clauses.push(`draws on your existing experience with <b>${m.matchedSkill.slice(0,2).join(', ')}</b>`);
+  }
+ 
+  const priorities = profile.priorities || [];
+  if(priorities.includes('pay') && listing.type === 'job'){
+    clauses.push('is a full-time role, aligned with pay being a top priority for you');
+  }
+  if(priorities.includes('learning') && (listing.type === 'internship' || listing.type === 'college')){
+    clauses.push('is structured around hands-on learning, which you said matters most right now');
+  }
+  const listingLoc = (listing.loc || '').toLowerCase();
+  if(priorities.includes('flexibility') && listingLoc.includes('remote')){
+    clauses.push('is remote, matching your stated need for flexibility');
+  }
+ 
+  const locationPref = (profile.loc || '').toLowerCase();
+  if(locationPref && listingLoc){
+    if(locationPref.includes('remote') && listingLoc.includes('remote')){
+      clauses.push('matches your remote location preference');
+    } else {
+      const prefTokens = tokenize(locationPref).filter(t => t.length > 3);
+      if(prefTokens.some(t => listingLoc.includes(t))){
+        clauses.push(`is based in ${listing.loc}, inside your stated location preference`);
+      }
+    }
+  }
+ 
+  let deadlineNote = '';
+  if(listing.deadline){
+    const deadlineTime = parseDeadline(listing.deadline);
+    if(!isNaN(deadlineTime)){
+      const daysLeft = Math.round((deadlineTime - Date.now()) / 86400000);
+      if(daysLeft >= 0 && daysLeft <= 14){
+        deadlineNote = ` It also closes in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}, so it's worth acting on soon if you're interested.`;
+      }
+    }
+  }
+ 
+  if(clauses.length === 0){
+    return `Looser fit - no strong overlap with your stated goal, skills, or priorities yet, but worth a glance while broadening this cycle's search.${deadlineNote}`;
+  }
+  let joined;
+  if(clauses.length === 1) joined = clauses[0];
+  else if(clauses.length === 2) joined = `${clauses[0]}, and ${clauses[1]}`;
+  else joined = clauses.slice(0, -1).join(', ') + `, and ${clauses[clauses.length-1]}`;
+ 
+  return `This ${joined}.${deadlineNote}`;
 }
 function runMatchCycle(profile){
   const goalTokens = tokenize(profile.northstar + ' ' + profile.finalidea);
