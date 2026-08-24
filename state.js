@@ -1,4 +1,4 @@
-==== VELORA SHARED CORE ============ */
+/* ============ VELORA SHARED CORE ============ */
  
 /* ---- Logo mark: guiding star, navy + gold ---- */
 function veloraMark(size){
@@ -919,4 +919,3 @@ function injectMetisWidget(systemContextFn){
     } finally { chatSend.disabled = false; }
   }
 }
- 
