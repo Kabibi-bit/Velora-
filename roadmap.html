@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roadmap — Velora</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.roadmap-wrap{ max-width: 800px; }
+.summary-panel{ background: var(--panel); border: 1px solid var(--gold); border-radius: var(--radius); padding: 24px; margin-bottom: 28px; }
+.summary-panel h2{ font-family:'Space Grotesk', sans-serif; font-size: 13px; font-weight:700; letter-spacing:0.05em; text-transform: uppercase; color: var(--gold); margin: 0 0 10px; }
+.summary-panel p{ font-family:'Manrope', sans-serif; font-size: 15px; line-height: 1.65; color: var(--text); margin: 0; }
+
+.roadmap-overall-progress{ display:flex; align-items:center; gap: 14px; margin-bottom: 28px; }
+.roadmap-progress-track{ flex:1; height: 10px; background: var(--line-soft); border-radius: 999px; overflow: hidden; }
+.roadmap-progress-fill{ height:100%; background: linear-gradient(90deg, var(--aurora), var(--gold)); border-radius: 999px; transition: width .4s ease; }
+.roadmap-progress-label{ font-family:'JetBrains Mono', monospace; font-size: 11.5px; color: var(--text-dim); white-space: nowrap; }
+
+.milestone-card{ background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 26px; margin-bottom: 18px; position: relative; }
+.milestone-card.status-done{ border-color: rgba(95,224,184,0.5); }
+.milestone-card.status-in_progress{ border-color: rgba(240,178,78,0.5); }
+.milestone-head{ display:flex; justify-content: space-between; align-items:flex-start; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
+.milestone-stage-num{ font-family:'Space Grotesk', sans-serif; font-weight: 800; font-size: 13px; color: var(--gold); letter-spacing: 0.04em; text-transform: uppercase; }
+.milestone-title{ font-family:'Space Grotesk', sans-serif; font-weight: 700; font-size: 19px; margin: 6px 0 0; color: var(--text); }
+.milestone-status-select{ font-family:'JetBrains Mono', monospace; font-size: 11px; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--void); color: var(--text-dim); cursor: pointer; }
+.milestone-desc{ font-family:'Manrope', sans-serif; font-size: 14.5px; line-height: 1.65; color: var(--text-dim); margin: 12px 0 18px; }
+
+.milestone-detail-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+@media (max-width: 640px){ .milestone-detail-grid{ grid-template-columns: 1fr; } }
+.milestone-branch-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+@media (max-width: 640px){ .milestone-branch-grid{ grid-template-columns: 1fr; } }
+.branch-block{ border-radius: 10px; padding: 14px 16px; }
+.branch-block .dlabel{ font-family:'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+.branch-block p{ font-family:'Manrope', sans-serif; font-size: 13px; line-height: 1.55; color: var(--text); margin: 0; }
+.branch-block.works{ background: rgba(95,224,184,0.08); border: 1px solid rgba(95,224,184,0.35); }
+.branch-block.works .dlabel{ color: var(--aurora); }
+.branch-block.stalls{ background: rgba(242,122,107,0.08); border: 1px solid rgba(242,122,107,0.35); }
+.branch-block.stalls .dlabel{ color: var(--danger); }
+.detail-block{ background: var(--void); border: 1px solid var(--line-soft); border-radius: 10px; padding: 14px 16px; }
+.detail-block .dlabel{ font-family:'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+.detail-block p{ font-family:'Manrope', sans-serif; font-size: 13px; line-height: 1.55; color: var(--text); margin: 0; }
+.detail-block.success .dlabel{ color: var(--aurora); }
+.detail-block.action .dlabel{ color: var(--gold); }
+.detail-block.resource .dlabel{ color: var(--comet); }
+.detail-block.risk .dlabel{ color: var(--danger); }
+
+.milestone-footer{ display:flex; align-items:center; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+.milestone-timeframe{ font-family:'JetBrains Mono', monospace; font-size: 10.5px; color: var(--gold); border: 1px solid rgba(240,178,78,0.35); background: var(--gold-dim); padding: 4px 11px; border-radius: 999px; }
+.milestone-matches{ font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--text-faint); }
+
+.roadmap-actions{ display:flex; gap: 10px; margin-bottom: 28px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+<div id="nav-root"></div>
+
+<div class="wrap">
+  <div class="page">
+    <div class="page-head">
+      <div class="eyebrow">Roadmap</div>
+      <h1>Your full plan</h1>
+      <p>Every stage, in detail - what to do, how you'll know it's done, what to use, and what commonly goes wrong.</p>
+    </div>
+
+    <div id="noRoadmap" class="empty-state hidden">
+      <div class="glyph">&#10022;</div>
+      No roadmap yet.
+      <div class="sub">Complete the survey first so a roadmap can be built around your actual goal.</div>
+      <a class="btn" href="survey.html">Go to survey &rarr;</a>
+    </div>
+
+    <div class="roadmap-wrap" id="roadmapContent">
+      <div class="roadmap-actions">
+        <button class="btn ghost" id="regenerateBtn">Regenerate from latest matches</button>
+      </div>
+
+      <div class="summary-panel">
+        <h2>Overall strategy</h2>
+        <p id="summaryText"></p>
+      </div>
+
+      <div class="roadmap-overall-progress">
+        <div class="roadmap-progress-track"><div class="roadmap-progress-fill" id="overallProgressFill"></div></div>
+        <span class="roadmap-progress-label" id="overallProgressLabel"></span>
+      </div>
+
+      <div id="milestonesList"></div>
+    </div>
+  </div>
+  <footer>Velora is a demo - resource and risk suggestions are illustrative guidance, not guaranteed outcomes.</footer>
+</div>
+
+<script src="state.js"></script>
+<script src="charts.js"></script>
+<script>
+window.addEventListener("error", function(e){
+  var msg = "Script error: " + e.message + " (in " + (e.filename ? e.filename.split("/").pop() : "unknown file") + ", line " + e.lineno + ")";
+  showDiagBanner(msg);
+});
+function showDiagBanner(msg){
+  if(document.getElementById("diagBanner")) return;
+  var b = document.createElement("div");
+  b.id = "diagBanner";
+  b.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;background:#B91C1C;color:#fff;padding:14px 20px;font-family:monospace;font-size:13px;text-align:center;";
+  b.textContent = "Velora failed to load correctly - " + msg + " - check that all files (especially state.js and styles.css) are uploaded with these EXACT lowercase names to the same folder.";
+  document.body.prepend(b);
+}
+setTimeout(function(){
+  if(typeof renderNav === "undefined" || typeof veloraMark === "undefined"){
+    showDiagBanner("state.js did not load (its functions are undefined). Check the file exists, is named exactly state.js, and sits in the same folder as this page.");
+  }
+}, 800);
+</script>
+<script>
+initStarfield();
+renderNav('roadmap');
+localStorage.setItem('velora_role', 'candidate');
+
+const profile = getProfile();
+const lastScored = getMatches();
+
+if(!profile){
+  document.getElementById('noRoadmap').classList.remove('hidden');
+  document.getElementById('roadmapContent').classList.add('hidden');
+}
+
+function computeSkillGaps(){
+  if(!lastScored.length) return [];
+  const skillTokens = tokenize(profile.skills || '');
+  const goalTokens = tokenize(profile.northstar + ' ' + profile.finalidea);
+  const freq = {};
+  lastScored.slice(0,8).forEach(l => l.tags.forEach(tag => {
+    const known = skillTokens.some(t => tag.includes(t) || t.includes(tag)) || goalTokens.some(t => tag.includes(t) || t.includes(tag));
+    if(!known) freq[tag] = (freq[tag] || 0) + 1;
+  }));
+  return Object.entries(freq).sort((a,b) => b[1]-a[1]).slice(0,4).map(([tag]) => tag);
+}
+
+function matchesForMilestone(milestone){
+  if(!lastScored.length) return [];
+  const milestoneText = (milestone.title + ' ' + milestone.description).toLowerCase();
+  return lastScored.filter(l => {
+    const tags = l.tags.map(t => t.toLowerCase());
+    return tags.some(tag => milestoneText.includes(tag));
+  }).slice(0, 2);
+}
+
+function statusCycle(current){
+  const order = ['planned', 'in_progress', 'done'];
+  const idx = order.indexOf(current);
+  return order[(idx + 1) % order.length];
+}
+function statusLabel(s){ return {planned: 'Not started', in_progress: 'In progress', done: 'Done'}[s] || s; }
+
+function render(){
+  const roadmap = getRoadmap();
+  if(!roadmap || !roadmap.milestones || !roadmap.milestones.length){
+    document.getElementById('noRoadmap').classList.remove('hidden');
+    document.getElementById('roadmapContent').classList.add('hidden');
+    return;
+  }
+  document.getElementById('noRoadmap').classList.add('hidden');
+  document.getElementById('roadmapContent').classList.remove('hidden');
+
+  document.getElementById('summaryText').textContent = roadmap.summary;
+
+  const milestones = roadmap.milestones;
+  const doneCount = milestones.filter(m => m.status === 'done').length;
+  document.getElementById('overallProgressFill').style.width = Math.round((doneCount/milestones.length)*100) + '%';
+  document.getElementById('overallProgressLabel').textContent = `${doneCount} of ${milestones.length} stages complete`;
+
+  document.getElementById('milestonesList').innerHTML = milestones.map(m => {
+    const supportingMatches = matchesForMilestone(m);
+    return `<div class="milestone-card status-${m.status}" data-stage="${m.stage}">
+      <div class="milestone-head">
+        <div>
+          <div class="milestone-stage-num">Stage ${m.stage} of ${milestones.length}</div>
+          <h3 class="milestone-title">${m.title}</h3>
+        </div>
+        <select class="milestone-status-select" data-stage="${m.stage}">
+          <option value="planned" ${m.status==='planned'?'selected':''}>Not started</option>
+          <option value="in_progress" ${m.status==='in_progress'?'selected':''}>In progress</option>
+          <option value="done" ${m.status==='done'?'selected':''}>Done</option>
+        </select>
+      </div>
+      <p class="milestone-desc">${m.description}</p>
+      <div class="milestone-detail-grid">
+        <div class="detail-block success"><div class="dlabel">Done when</div><p>${m.success_criteria || '-'}</p></div>
+        <div class="detail-block action"><div class="dlabel">First step</div><p>${m.first_action || '-'}</p></div>
+        <div class="detail-block resource"><div class="dlabel">Use this</div><p>${m.resource || '-'}</p></div>
+        <div class="detail-block risk"><div class="dlabel">Common failure mode</div><p>${m.risk || '-'}</p></div>
+      </div>
+      ${(m.if_it_works || m.if_it_stalls) ? `
+      <div class="milestone-branch-grid">
+        ${m.if_it_works ? `<div class="branch-block works"><div class="dlabel">If this works out</div><p>${m.if_it_works}</p></div>` : ''}
+        ${m.if_it_stalls ? `<div class="branch-block stalls"><div class="dlabel">If this stalls</div><p>${m.if_it_stalls}</p></div>` : ''}
+      </div>` : ''}
+      <div class="milestone-footer">
+        ${m.estimated_timeframe ? `<span class="milestone-timeframe">${m.estimated_timeframe}</span>` : ''}
+        ${supportingMatches.length ? `<span class="milestone-matches">Supported by: ${supportingMatches.map(sm => sm.title).join(', ')}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  document.querySelectorAll('.milestone-status-select').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const stage = parseInt(sel.dataset.stage);
+      const rm = getRoadmap();
+      const milestone = rm.milestones.find(m => m.stage === stage);
+      if(milestone){
+        milestone.status = sel.value;
+        saveRoadmap(rm);
+        render();
+      }
+    });
+  });
+}
+
+document.getElementById('regenerateBtn').addEventListener('click', () => {
+  if(!profile) return;
+  const skillGaps = computeSkillGaps();
+  const topMatch = lastScored.length ? lastScored[0] : null;
+  const roadmap = generateRoadmapLocal(profile, skillGaps, topMatch);
+  saveRoadmap(roadmap);
+  render();
+});
+
+if(profile) render();
+</script>
+</body>
+</html>
