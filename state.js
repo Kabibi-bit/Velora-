@@ -254,6 +254,101 @@ async function fetchDeepExplanation(listing, profile, roadmap){
   }
 }
  
+/* ---- Connection strategy: the referral/networking feature. This
+   deliberately does NOT invent a real named person at the company -
+   there's no data source here with real employee information, and
+   making up a name would be presenting fabricated data as real. What
+   it does instead is genuinely useful: identifies the TYPE of person
+   worth reaching out to, concrete guidance on how to actually find
+   them, and a tailored outreach message ready to send once you do. ---- */
+function getConnectionStrategies(){ try{ return JSON.parse(localStorage.getItem('velora_connection_strategies')) || {}; }catch(e){ return {}; } }
+function saveConnectionStrategy(listingId, strategy){
+  const all = getConnectionStrategies();
+  all[listingId] = strategy;
+  localStorage.setItem('velora_connection_strategies', JSON.stringify(all));
+}
+function getCachedConnectionStrategy(listingId){ return getConnectionStrategies()[String(listingId)] || null; }
+ 
+async function fetchConnectionStrategy(listing, profile){
+  const cached = getCachedConnectionStrategy(listing.id);
+  if(cached) return cached;
+ 
+  const prompt = `A candidate is applying to "${listing.title}" at ${listing.org} (${listing.type}), tags: ${listing.tags.join(', ')}. Their background: skills "${profile.skills}", goal "${profile.northstar}".\n\nHelp them get a real human connection at this company before applying cold. Return a JSON object with exactly these three keys:\n- contact_type: the specific TYPE of person worth reaching out to for this role (e.g. "someone currently in a similar individual-contributor role on this team" or "the hiring manager, likely titled X") - a role description, never a real invented name\n- search_guidance: 1-2 concrete sentences on exactly how to actually find that person - specific search terms or approach, not "network more"\n- outreach_message: a genuine, specific 80-120 word message they could send once they find someone - reference the candidate's real skills/goal and the specific role, ask for a short conversation or referral, not generic flattery\n\nReturn ONLY valid JSON with exactly those three keys, nothing else, no markdown fences.`;
+ 
+  try{
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 500, messages: [{role: "user", content: prompt}] })
+    });
+    const data = await response.json();
+    let text = (data.content || []).map(b => b.type === 'text' ? b.text : '').filter(Boolean).join('\n');
+    text = text.trim().replace(/^```json/,'').replace(/^```/,'').replace(/```$/,'').trim();
+    const parsed = JSON.parse(text);
+    saveConnectionStrategy(listing.id, parsed);
+    return parsed;
+  } catch(err){
+    console.error('Connection strategy generation failed:', err);
+    return null;
+  }
+}
+ 
+/* ---- Best-guess company contact address (pattern-based, never a
+   claimed-real specific person) and real-send flow. Mirrors the
+   backend's app/services/email_send.py logic exactly, so the demo
+   behaves the same way the real API will once connected. Actual
+   sending from THIS standalone frontend demo is not possible (no
+   backend attached, no mail server credentials in the browser) - so
+   send confirmations here are logged locally and clearly marked as
+   demo-only, rather than silently pretending an email went out. ---- */
+function guessCompanyDomain(orgName){
+  let cleaned = orgName.replace(/\b(inc|llc|ltd|corp|corporation|co)\b\.?/gi, '');
+  cleaned = cleaned.replace(/[^a-zA-Z0-9\s]/g, '').trim().toLowerCase();
+  const slug = cleaned.replace(/\s+/g, '');
+  return slug ? `${slug}.com` : null;
+}
+ 
+async function guessContactEmail(listing){
+  const domain = guessCompanyDomain(listing.org);
+  if(!domain) return { candidates: [], domain_guessed: null };
+  const prefixes = ['careers', 'jobs', 'hr', 'talent', 'recruiting'];
+  return {
+    domain_guessed: domain,
+    candidates: prefixes.map(p => `${p}@${domain}`),
+    verified: false,
+  };
+}
+ 
+function getOutreachLog(){ try{ return JSON.parse(localStorage.getItem('velora_outreach_log')) || []; }catch(e){ return []; } }
+function saveOutreachLog(list){ localStorage.setItem('velora_outreach_log', JSON.stringify(list)); }
+ 
+async function sendOutreachEmail(listing, toAddress, body, profile){
+  // Honest limitation: this standalone frontend demo has no backend
+  // attached and no real mail-sending credentials available to a
+  // browser. The real send happens via POST
+  // /listings/matches/{user_id}/connect/{listing_id}/send-email once
+  // this frontend is connected to your deployed backend - that
+  // endpoint actually calls Resend. Here, we log the attempt honestly
+  // as a demo action rather than claiming a real email went out.
+  const log = getOutreachLog();
+  const entry = {
+    id: 'send_' + Date.now(),
+    listing_id: listing.id,
+    listing_title: listing.title,
+    to_address: toAddress,
+    body,
+    status: 'demo_only',
+    created_at: new Date().toISOString(),
+  };
+  log.unshift(entry);
+  saveOutreachLog(log);
+  addNotification({
+    type: 'outreach_sent',
+    title: `Outreach logged (demo mode): ${listing.title}`,
+    detail: `To ${toAddress}. This demo does not connect to a real mail server - connect the frontend to your deployed backend to send for real via the /send-email endpoint.`,
+  });
+  return { status: 'demo_logged', error: null };
+}
+ 
 function getRoadmap(){
   try{
     const raw = JSON.parse(localStorage.getItem('velora_roadmap'));
@@ -919,3 +1014,4 @@ function injectMetisWidget(systemContextFn){
     } finally { chatSend.disabled = false; }
   }
 }
+ 
