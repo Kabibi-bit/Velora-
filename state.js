@@ -69,6 +69,11 @@ function renderNav(activePage){
     links = [{id: 'business', label: 'Candidate Search', href: 'business-dashboard.html'}];
   } else if(role === 'tutor'){
     links = [{id: 'tutor', label: 'Tutor Dashboard', href: 'tutor-dashboard.html'}];
+  } else if(role === 'athlete'){
+    links = [
+      {id: 'athlete-survey', label: 'Survey', href: 'athlete-survey.html'},
+      {id: 'athlete', label: 'Opportunities', href: 'athlete-dashboard.html'},
+    ];
   } else {
     links = [
       {id: 'survey', label: 'Survey', href: 'survey.html'},
@@ -76,6 +81,7 @@ function renderNav(activePage){
       {id: 'roadmap', label: 'Roadmap', href: 'roadmap.html'},
       {id: 'workshop', label: 'Workshop', href: 'workshop.html'},
       {id: 'auto', label: 'Auto', href: 'auto.html'},
+      {id: 'explore', label: 'Explore', href: 'explore.html'},
       {id: 'inbox', label: 'Inbox', href: 'inbox.html'},
     ];
   }
@@ -97,6 +103,9 @@ function renderNav(activePage){
 /* ---- localStorage helpers ---- */
 function getProfile(){ try{ return JSON.parse(localStorage.getItem('velora_profile')); }catch(e){ return null; } }
 function saveProfile(p){ localStorage.setItem('velora_profile', JSON.stringify(p)); }
+ 
+function getAthleteProfile(){ try{ return JSON.parse(localStorage.getItem('velora_athlete_profile')); }catch(e){ return null; } }
+function saveAthleteProfile(p){ localStorage.setItem('velora_athlete_profile', JSON.stringify(p)); }
 function getMatches(){ try{ return JSON.parse(localStorage.getItem('velora_matches')) || []; }catch(e){ return []; } }
 function saveMatches(m){ localStorage.setItem('velora_matches', JSON.stringify(m)); }
 function getCycleCount(){ return parseInt(localStorage.getItem('velora_cycle_count') || '0'); }
@@ -290,6 +299,14 @@ const LISTINGS = [
   {id:25, type:'athletic', title:"Women's Rowing Athletic Scholarship", org:'Marrow College Athletics', tags:['athletics','rowing','leadership','scholarship'], loc:'Boston, MA', deadline:'Sep 30'},
   {id:26, type:'athletic', title:'Track & Field Partial Scholarship', org:'Whitfield University', tags:['athletics','track','training','scholarship'], loc:'Remote', deadline:'Oct 5'},
   {id:27, type:'athletic', title:'Student-Athlete Leadership Grant', org:'Bold Futures Fund', tags:['athletics','leadership','grant','mentorship'], loc:'Remote', deadline:'Sep 28'},
+  {id:28, type:'athletic', title:"Men's Soccer Athletic Scholarship", org:'Carrow Center Athletics', tags:['athletics','soccer','scholarship','recruiting'], loc:'Washington, DC', deadline:'Oct 10'},
+  {id:29, type:'athletic', title:'Basketball Partial Scholarship', org:'Northbrook Athletics', tags:['athletics','basketball','scholarship','training'], loc:'Remote', deadline:'Oct 2'},
+  {id:30, type:'athletic', title:'Swimming & Diving Scholarship', org:'Halyard Aquatics', tags:['athletics','swimming','scholarship','training'], loc:'Austin, TX', deadline:'Sep 25'},
+  {id:31, type:'athletic', title:'Assistant Athletic Coach', org:'Fernway Prep Athletics', tags:['athletics','coaching','leadership','training'], loc:'Remote', deadline:'Oct 8'},
+  {id:32, type:'athletic', title:'Certified Athletic Trainer', org:'Delmar Sports Medicine', tags:['athletics','athletic training','injury prevention','sports medicine'], loc:'Chicago, IL', deadline:'Oct 12'},
+  {id:33, type:'athletic', title:'Strength & Conditioning Coach', org:'Twin River Performance', tags:['athletics','strength training','coaching','conditioning'], loc:'Remote', deadline:'Oct 6'},
+  {id:34, type:'athletic', title:'Sports Program Coordinator', org:'Beacon Peak Recreation', tags:['athletics','sports management','coordination','operations'], loc:'Seattle, WA', deadline:'Oct 15'},
+  {id:35, type:'athletic', title:'Athletic Department Operations Assistant', org:'Marrow College Athletics', tags:['athletics','sports management','operations','stakeholder'], loc:'Boston, MA', deadline:'Sep 29'},
 ];
  
 /* ---- Matching engine ---- */
@@ -414,6 +431,53 @@ function scoreByOverlap(itemTags, requirementText){
   const pct = itemTags.length ? Math.max(30, Math.min(96, Math.round((matched.length / itemTags.length) * 100) + 25)) : 30;
   return { pct, matched };
 }
+ 
+/* ---- Career discovery: for people who don't know what direction to aim at yet ---- */
+const CAREER_DIRECTIONS = [
+  { id:'product-strategy', title:'Product & Business Strategy', description:'Deciding what gets built and why - balancing user needs, data, and business goals.', dims:{people:2,data:2,creative:1,structure:2}, listingTags:['product','roadmap','stakeholder','strategy'] },
+  { id:'data-analytics', title:'Data & Analytics', description:'Finding patterns in information to answer real questions and guide decisions.', dims:{people:0,data:3,creative:0,structure:2}, listingTags:['sql','python','analytics','data','dashboards'] },
+  { id:'software-engineering', title:'Software Engineering', description:'Building the systems and tools other people and businesses run on.', dims:{people:0,data:2,creative:1,structure:2}, listingTags:['python','backend development','ml','testing'] },
+  { id:'ux-design', title:'UX & Design', description:'Shaping how something looks, feels, and works for the people using it.', dims:{people:2,data:0,creative:3,structure:0}, listingTags:['figma','user research','prototyping','ux'] },
+  { id:'marketing-comms', title:'Marketing & Communications', description:'Telling a story clearly enough that the right people actually hear it.', dims:{people:2,data:1,creative:2,structure:0}, listingTags:['marketing','writing','positioning','growth'] },
+  { id:'healthcare-science', title:'Healthcare & Life Sciences', description:'Working directly on human health, from clinical care to research.', dims:{people:3,data:1,creative:0,structure:2}, listingTags:['sports medicine','athletic training','injury prevention','research'] },
+  { id:'education-teaching', title:'Education & Teaching', description:'Helping other people learn something you understand well.', dims:{people:3,data:0,creative:1,structure:1}, listingTags:['mentorship','leadership','coaching','training'] },
+  { id:'skilled-trades', title:'Skilled Trades & Hands-on Work', description:'Building or fixing real, physical things - work you can see the result of.', dims:{people:1,data:0,creative:1,structure:1}, listingTags:['operations','process','training','conditioning'] },
+  { id:'creative-media', title:'Creative & Media', description:'Making things - writing, video, design, or content people actually engage with.', dims:{people:1,data:0,creative:3,structure:0}, listingTags:['writing','positioning','figma','prototyping'] },
+  { id:'social-impact', title:'Social Impact & Nonprofit', description:'Working on a mission-driven problem where the impact matters more than the paycheck.', dims:{people:3,data:1,creative:1,structure:1}, listingTags:['policy','ethics','mentorship','leadership'] },
+  { id:'finance-ops', title:'Finance & Operations', description:'Keeping the numbers, processes, and logistics of an organization actually working.', dims:{people:0,data:2,creative:0,structure:3}, listingTags:['finance','excel','operations','reporting'] },
+  { id:'sports-athletics', title:'Sports & Athletics', description:'A career built around competition, coaching, or the business of sport.', dims:{people:2,data:0,creative:1,structure:1}, listingTags:['athletics','coaching','sports management','training'] },
+];
+ 
+function scoreCareerDirections(answers){
+  // answers: {people, data, creative, structure} each 0-3, plus freeText
+  const freeTextTokens = tokenize(answers.freeText || '');
+  return CAREER_DIRECTIONS.map(dir => {
+    const dimDiff = Math.abs(dir.dims.people - answers.people) + Math.abs(dir.dims.data - answers.data) +
+                     Math.abs(dir.dims.creative - answers.creative) + Math.abs(dir.dims.structure - answers.structure);
+    const maxDiff = 12; // 4 dims x max distance 3
+    let pct = Math.round((1 - (dimDiff / maxDiff)) * 100);
+    const textMatches = dir.listingTags.filter(tag => freeTextTokens.some(t => tag.includes(t) || t.includes(tag)));
+    pct = Math.min(97, pct + (textMatches.length * 6));
+    pct = Math.max(20, pct);
+    const relatedListings = LISTINGS.filter(l => l.tags.some(t => dir.listingTags.includes(t)));
+    return { ...dir, pct, textMatches, relatedCount: relatedListings.length };
+  }).sort((a,b) => b.pct - a.pct);
+}
+ 
+async function explainCareerDirectionDeep(direction, answers){
+  const prompt = `Someone doesn't yet know what career direction to pursue. They described what energizes them: people-facing work rated ${answers.people}/3, data/analytical work rated ${answers.data}/3, creative work rated ${answers.creative}/3, structured/process work rated ${answers.structure}/3. They also said, in their own words: "${answers.freeText}".\n\nA suggested direction: "${direction.title}" - ${direction.description}\n\nWrite a genuine, specific 3-4 sentence case for why this direction could fit THEM based on what they described - reference their actual words where relevant. Then give one concrete, low-commitment first step they could take this week to test whether it actually fits (not "research the field" - something specific and doable). Be honest if the fit seems only partial.`;
+  try{
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 300, messages: [{role:"user", content: prompt}] })
+    });
+    const data = await response.json();
+    return (data.content || []).map(b => b.type==='text'?b.text:'').filter(Boolean).join('\n') || null;
+  } catch(err){ console.error('Career direction explanation failed:', err); return null; }
+}
+ 
+function getCareerDiscoveryResult(){ try{ return JSON.parse(localStorage.getItem('velora_career_discovery')); }catch(e){ return null; } }
+function saveCareerDiscoveryResult(r){ localStorage.setItem('velora_career_discovery', JSON.stringify(r)); }
  
 /* ---- Roadmap generation (client-side, personalized with real match data) ---- */
 function generateRoadmapLocal(profile, skillGaps, topMatch){
@@ -584,6 +648,143 @@ function generateRoadmapLocal(profile, skillGaps, topMatch){
   }
  
   const summary = `This plan moves from ${stage === 'student' ? 'building proof of your interest' : stage === 'grad' ? 'sharpening your existing story' : stage === 'switch' ? 'translating your background' : 'clarifying your target'} toward "${goalPhrase}" in roughly ${steps.length} stages. ${gapSkill ? `The biggest risk to the whole plan is skipping the ${gapSkill} gap - it shows up repeatedly in your real matches and closing it early makes every later stage easier.` : 'The biggest risk to the whole plan is moving to the next stage before the current one has a real, checkable result - momentum without evidence tends to stall.'}`;
+ 
+  return {
+    summary,
+    milestones: steps.map((s, i) => ({...s, stage: i + 1, status: 'planned'})),
+  };
+}
+ 
+/* ---- Athlete-specific roadmap, tailored to sporting career direction ---- */
+function generateAthleteRoadmapLocal(athleteProfile, topMatch){
+  const sport = athleteProfile.sport;
+  const direction = athleteProfile.careerDirection;
+  const level = athleteProfile.level;
+  const steps = [];
+ 
+  const matchLine = topMatch
+    ? `Your current top match is "${topMatch.title}" at ${topMatch.org} (${topMatch.pct}% fit) - start there.`
+    : `Run a scan on Opportunities first so this step can point at a real listing instead of a placeholder.`;
+  const matchFirstAction = topMatch
+    ? `Today: open "${topMatch.title}" at ${topMatch.org} and read the full listing - decide within 24 hours whether to apply.`
+    : `Today: go to Opportunities and browse what's currently available.`;
+ 
+  if(direction === 'play-college'){
+    steps.push({
+      title: `Build a recruiting highlight reel for ${sport}`,
+      description: `Coaches decide in seconds whether to keep watching - your reel needs to open with your strongest, most representative plays in ${sport}, not a slow build-up.`,
+      success_criteria: 'You have a 3-5 minute video you would actually send to a college coach today.',
+      estimated_timeframe: '2-3 weeks',
+      first_action: 'Today: pull your 5 best clips from recent games or practice footage and put them in one folder.',
+      resource: 'Game or practice footage you already have, plus free editing tools (CapCut, iMovie).',
+      risk: 'Waiting for a "perfect" highlight moment instead of using what you already have - a good-enough reel sent now beats a perfect one sent after the recruiting window closes.',
+    });
+    steps.push({
+      title: `Apply to scholarship and recruiting opportunities matching ${level} level`,
+      description: `${matchLine} Prioritize programs where your current level is a realistic fit - reaching too high across the board wastes limited outreach time.`,
+      success_criteria: 'You have applied to or contacted at least 5 programs matching your level and sport.',
+      estimated_timeframe: '1-3 months',
+      first_action: matchFirstAction,
+      resource: 'Your Opportunities page, filtered by athletic scholarships in your sport.',
+      risk: 'Only targeting top-tier programs - a broader list of realistic-fit schools produces more real offers.',
+    });
+    steps.push({
+      title: 'Get on a call with a coach at a realistic-fit program',
+      description: 'A direct conversation does more than any application - coaches remember athletes who reach out specifically, not generically.',
+      success_criteria: 'You have had at least one real conversation with a college coach about their program.',
+      estimated_timeframe: '3-6 weeks',
+      first_action: 'This week: email one coach directly, referencing something specific about their program and your fit.',
+      resource: 'The coaching staff directory on the program\'s official athletics website.',
+      risk: 'Sending the same generic email to every program - a specific, researched message gets responses; a form email gets ignored.',
+    });
+  } else if(direction === 'go-pro'){
+    steps.push({
+      title: `Get in front of scouts or agents in ${sport}`,
+      description: 'Visibility to the people who make roster and signing decisions is the actual bottleneck at this stage, not raw performance alone.',
+      success_criteria: 'You have made direct contact with at least one scout, agent, or team representative.',
+      estimated_timeframe: '1-2 months',
+      first_action: 'Today: identify one realistic contact (a local scout, a combine organizer, an agent) and research how to reach them.',
+      resource: 'Combine or tryout events in your region, and public scouting/agent directories for your sport.',
+      risk: 'Waiting to be discovered instead of actively reaching out - at this level, visibility is something you build, not something that happens to you.',
+    });
+    steps.push({
+      title: `Compete at the highest available level for ${sport}`,
+      description: `${matchLine} Every level up is itself a credential - semi-pro, regional, or open competitions all build a track record scouts can verify.`,
+      success_criteria: 'You are registered or competing in the highest-level competition realistically available to you right now.',
+      estimated_timeframe: 'Ongoing',
+      first_action: matchFirstAction,
+      resource: 'Your Opportunities page, filtered for competitive/professional-track listings in your sport.',
+      risk: 'Staying at a comfortable level too long - progression requires deliberately seeking tougher competition.',
+    });
+    steps.push({
+      title: 'Build a public record scouts can verify independently',
+      description: 'Stats, video, and results that exist publicly are more credible than anything you say about yourself directly.',
+      success_criteria: 'A scout could find verifiable performance data about you without asking you for it first.',
+      estimated_timeframe: '2-3 months',
+      first_action: 'This week: make sure your competition results and stats are documented somewhere public and findable.',
+      resource: 'Your league or competition\'s official results/stats pages, plus your own athlete profile page if you have one.',
+      risk: 'Relying only on word-of-mouth reputation - a public, verifiable record travels further than a reputation confined to your local circle.',
+    });
+  } else if(direction === 'coach'){
+    steps.push({
+      title: `Get certified or credentialed to coach ${sport}`,
+      description: `Most coaching roles require a specific certification before they will even consider an application - this is the real first gate, not experience alone.`,
+      success_criteria: 'You hold (or are actively completing) the certification most commonly required for coaching roles in your sport.',
+      estimated_timeframe: '4-8 weeks',
+      first_action: 'Today: search for the standard coaching certification for your sport and confirm the exact requirements.',
+      resource: 'Your sport\'s national governing body website, which typically lists official certification programs.',
+      risk: 'Assuming playing experience alone qualifies you - most programs specifically require the certification, not just a playing background.',
+    });
+    steps.push({
+      title: `Apply to assistant or entry-level coaching roles matching ${level}`,
+      description: `${matchLine} An assistant role is the realistic entry point almost everywhere - it builds the track record head roles require.`,
+      success_criteria: 'You have applied to at least 5 coaching roles at your current credential level.',
+      estimated_timeframe: '1-3 months',
+      first_action: matchFirstAction,
+      resource: 'Your Opportunities page, filtered for coaching roles in your sport.',
+      risk: 'Only applying to head-coach roles before building any staff experience - assistant roles are not a step down, they\'re the standard entry point.',
+    });
+    steps.push({
+      title: 'Build a specific coaching philosophy you can articulate',
+      description: 'Programs hire coaches who can clearly explain their approach, not just list credentials - this is usually the actual interview differentiator.',
+      success_criteria: 'You can explain your coaching philosophy in 2-3 concrete sentences, with a specific example.',
+      estimated_timeframe: '2 weeks',
+      first_action: `Today: write down the one coaching principle you would build a program around, with a real example from your own experience.`,
+      resource: 'A coach or mentor you respect, as a sounding board for articulating your approach.',
+      risk: 'Relying on generic coaching cliches in interviews - specificity is what actually separates candidates.',
+    });
+  } else {
+    steps.push({
+      title: `Identify the specific sports-management role you're targeting`,
+      description: `"Sports management" covers very different jobs - operations, athletic training, sports medicine, program coordination. Naming the specific track focuses everything after this.`,
+      success_criteria: 'You can name the exact job title and type of organization you\'re targeting.',
+      estimated_timeframe: '1 week',
+      first_action: 'Today: look at 5 real job postings in sports management and note which specific track appeals most.',
+      resource: 'Your Opportunities page, browsed broadly across sports management/administration listings.',
+      risk: 'Staying vague about "something in sports" - a named target is what actually focuses your applications.',
+    });
+    steps.push({
+      title: `Apply to entry-level sports management roles matching ${level}`,
+      description: `${matchLine} Athletic departments and sports organizations often hire from within - an entry-level operations or coordination role is a realistic first step.`,
+      success_criteria: 'You have applied to at least 5 roles in your identified track.',
+      estimated_timeframe: '1-3 months',
+      first_action: matchFirstAction,
+      resource: 'Your Opportunities page, filtered for sports management and operations roles.',
+      risk: 'Applying broadly across every sports-adjacent posting instead of your specific identified track - focus produces stronger applications.',
+    });
+    steps.push({
+      title: 'Build direct experience through a real athletic department or organization',
+      description: 'Even part-time or volunteer experience inside a real athletic operation is worth more on paper than related-but-outside experience.',
+      success_criteria: 'You have real, even if informal, experience inside an athletic department or sports organization.',
+      estimated_timeframe: '2-3 months',
+      first_action: 'This week: contact one local athletic department or sports organization about part-time or volunteer opportunities.',
+      resource: 'Local high school, college, or club athletic departments - often more accessible than professional organizations for a first step.',
+      risk: 'Waiting for a paid role before getting any real experience - unpaid or part-time experience inside the industry is a legitimate, common path in.',
+    });
+  }
+ 
+  const directionLabel = {'play-college': 'playing at the college level', 'go-pro': 'going pro', 'coach': 'coaching', 'sports-management': 'a sports management career'}[direction] || 'your athletic career goal';
+  const summary = `This plan moves from where you are now toward ${directionLabel} in ${sport}, in ${steps.length} stages. The biggest risk to the whole plan is treating visibility and credentials as things that happen automatically - at every stage, the actual bottleneck is usually direct outreach or a specific credential, not raw ability alone.`;
  
   return {
     summary,
