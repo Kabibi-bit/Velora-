@@ -1,4 +1,4 @@
-/* ============ VELORA SHARED CORE ============ */
+==== VELORA SHARED CORE ============ */
  
 /* ---- Logo mark: guiding star, navy + gold ---- */
 function veloraMark(size){
@@ -464,6 +464,40 @@ function scoreCareerDirections(answers){
   }).sort((a,b) => b.pct - a.pct);
 }
  
+/* ---- Real AI-generated career directions: this is the actual
+   'better than FutureScope' piece. Static quiz tools (FutureScope,
+   CareerExplorer) match your answers against a fixed list of a few
+   hundred to a thousand pre-written career profiles - you always get
+   back something from their list, worded the same way for everyone
+   who lands near that spot. This instead reasons directly over what
+   someone actually wrote, so the output isn't capped to a fixed set
+   of categories and reads like it was written for this person, not
+   pulled from a shelf. scoreCareerDirections() above is kept only as
+   an instant offline fallback if this call fails. ---- */
+async function generateCareerDirectionsAI(answers){
+  const prompt = `Someone doesn't know what career direction to pursue. Here's what they told us:\nWorking directly with people: ${answers.people}/3. Working with data and analysis: ${answers.data}/3. Creative, open-ended work: ${answers.creative}/3. Structured, process-driven work: ${answers.structure}/3.\nIn their own words, what they find themselves drawn to without anyone asking: "${answers.freeText}"\n\nGenerate 3-4 specific career directions worth them considering. Do NOT default to generic broad categories like "marketing" or "healthcare" unless their answer genuinely points there - reason from the SPECIFIC things they described, and name directions as specific as what they gave you deserves. If their free-text answer is rich and specific, your directions should be too, not generic buckets.\n\nFor each direction, return an object with exactly these four keys:\n- title: a specific, real direction (not a vague category)\n- description: 1-2 sentences on what someone in this direction actually spends their time doing, concretely\n- why_fits: 1-2 sentences connecting THIS specific person's stated answers (quote or reference their actual words) to why this direction fits them specifically, not generically\n- first_step: one concrete, low-commitment thing they could do this week to test whether it actually fits - not "research the field", something specific and doable\n\nReturn ONLY valid JSON, an array of 3-4 such objects, nothing else, no markdown fences, no commentary.`;
+  try{
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 900, messages: [{role:"user", content: prompt}] })
+    });
+    const data = await response.json();
+    let text = (data.content || []).map(b => b.type==='text'?b.text:'').filter(Boolean).join('\n');
+    text = text.trim().replace(/^```json/,'').replace(/^```/,'').replace(/```$/,'').trim();
+    const parsed = JSON.parse(text);
+    const freeTextTokens = tokenize(answers.freeText || '');
+    return parsed.map((d, i) => {
+      const dTokens = tokenize(d.title + ' ' + d.description);
+      const allTokens = [...new Set([...dTokens, ...freeTextTokens])];
+      const relatedListings = LISTINGS.filter(l => l.tags.some(t => allTokens.some(tok => t.includes(tok) || tok.includes(t))));
+      return { ...d, id: 'ai-' + i, relatedCount: relatedListings.length };
+    });
+  } catch(err){
+    console.error('AI career direction generation failed, falling back to offline matching:', err);
+    return null;
+  }
+}
+ 
 async function explainCareerDirectionDeep(direction, answers){
   const prompt = `Someone doesn't yet know what career direction to pursue. They described what energizes them: people-facing work rated ${answers.people}/3, data/analytical work rated ${answers.data}/3, creative work rated ${answers.creative}/3, structured/process work rated ${answers.structure}/3. They also said, in their own words: "${answers.freeText}".\n\nA suggested direction: "${direction.title}" - ${direction.description}\n\nWrite a genuine, specific 3-4 sentence case for why this direction could fit THEM based on what they described - reference their actual words where relevant. Then give one concrete, low-commitment first step they could take this week to test whether it actually fits (not "research the field" - something specific and doable). Be honest if the fit seems only partial.`;
   try{
@@ -885,3 +919,4 @@ function injectMetisWidget(systemContextFn){
     } finally { chatSend.disabled = false; }
   }
 }
+ 
