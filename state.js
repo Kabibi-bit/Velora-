@@ -401,6 +401,20 @@ function computeRoadmapAlignment(listing, milestones){
   return { stage: bestStage.stage, title: bestStage.title, matchedOn: bestOverlap };
 }
  
+function ringSvg(pct, color, size){
+  size = size || 52;
+  const r = (size/2) - 5, c = 2*Math.PI*r, offset = c-(pct/100)*c, cx = size/2;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="var(--line)" stroke-width="4"/><circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="${color}" stroke-width="4" stroke-dasharray="${c}" stroke-dashoffset="${offset}" stroke-linecap="round"/></svg>`;
+}
+ 
+/* ---- Generic tag/keyword-overlap scoring, reusable for candidates matching businesses and tutors matching requests ---- */
+function scoreByOverlap(itemTags, requirementText){
+  const reqTokens = tokenize(requirementText || '');
+  const matched = itemTags.filter(tag => reqTokens.some(t => tag.toLowerCase().includes(t) || t.includes(tag.toLowerCase())));
+  const pct = itemTags.length ? Math.max(30, Math.min(96, Math.round((matched.length / itemTags.length) * 100) + 25)) : 30;
+  return { pct, matched };
+}
+ 
 /* ---- Roadmap generation (client-side, personalized with real match data) ---- */
 function generateRoadmapLocal(profile, skillGaps, topMatch){
   skillGaps = skillGaps || [];
