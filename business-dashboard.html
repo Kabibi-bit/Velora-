@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Candidate Search — Velora for Business</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.cand-card{ background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; margin-bottom: 14px; }
+.cand-body{ display:grid; grid-template-columns: 56px 1fr; gap: 18px; }
+.cand-top{ display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-start; }
+.cand-title{ font-family:'Space Grotesk', sans-serif; font-weight:700; font-size: 15.5px; margin:0 0 4px; }
+.cand-meta{ font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--text-faint); }
+.cand-skills{ font-family:'Manrope', sans-serif; font-size: 13px; color: var(--text-dim); margin-top: 6px; line-height:1.5; }
+.cand-rationale{ font-family:'Manrope', sans-serif; font-size: 13px; color: var(--text); margin-top: 10px; line-height:1.55; padding: 10px 12px; background: var(--void); border: 1px solid var(--line-soft); border-radius: 8px; }
+.cand-rationale b{ color: var(--violet); }
+.cand-deep{ margin-top: 10px; padding: 12px 14px; background: var(--void); border: 1px solid var(--violet); border-radius: 8px; font-family:'Manrope', sans-serif; font-size: 13px; line-height:1.55; color: var(--text); display:none; }
+.cand-deep.open{ display:block; }
+.cand-actions{ display:flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items:center; }
+.explain-deep-btn{ background:none; border: 1px solid var(--line); border-radius: 999px; color: var(--violet); font-family:'JetBrains Mono', monospace; font-size:10px; letter-spacing:0.04em; text-transform:uppercase; cursor:pointer; padding: 5px 12px; }
+.explain-deep-btn:hover{ border-color: var(--violet); background: rgba(155,135,245,0.1); }
+
+.section-toggle{ display:flex; gap: 10px; margin-bottom: 24px; }
+.section-toggle button{ background: var(--panel); border: 1px solid var(--line); border-radius: 999px; color: var(--text-dim); font-family:'Space Grotesk', sans-serif; font-weight:700; font-size: 13px; padding: 10px 20px; cursor:pointer; }
+.section-toggle button.active{ background: var(--violet-dim); border-color: var(--violet); color: var(--violet); }
+
+.toggle-switch{ position: relative; width: 50px; height: 28px; flex-shrink: 0; }
+.toggle-switch input{ opacity: 0; width: 0; height: 0; }
+.toggle-slider{ position: absolute; cursor: pointer; inset: 0; background: var(--line); border-radius: 999px; transition: all .2s ease; }
+.toggle-slider::before{ content: ''; position: absolute; height: 20px; width: 20px; left: 4px; top: 4px; background: var(--text); border-radius: 50%; transition: all .2s ease; }
+.toggle-switch input:checked + .toggle-slider{ background: var(--violet); }
+.toggle-switch input:checked + .toggle-slider::before{ transform: translateX(22px); background: #14102E; }
+.auto-hire-panel{ display:flex; justify-content:space-between; align-items:flex-start; gap: 16px; flex-wrap:wrap; }
+.auto-hire-panel .mode-desc{ font-family:'Manrope', sans-serif; font-size: 13px; color: var(--text-dim); max-width: 480px; margin: 6px 0 0; }
+.threshold-inline{ margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line-soft); display:none; }
+.threshold-inline.show{ display:block; }
+.threshold-inline label{ display:flex; justify-content:space-between; font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-dim); margin-bottom:8px; }
+.threshold-inline .tval{ color: var(--violet); font-weight:700; }
+input[type=range]{ width:100%; accent-color: var(--violet); }
+
+.editable-field{ width:100%; background: var(--void); border: 1px solid var(--line); border-radius: 8px; color: var(--text); font-family:'Manrope', sans-serif; font-size: 13.5px; padding: 10px 12px; margin-top: 10px; resize: vertical; min-height: 100px; }
+.send-all-bar{ display:flex; justify-content:space-between; align-items:center; background: var(--panel); border: 1px solid var(--violet); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 20px; }
+.send-all-bar p{ font-family:'Manrope', sans-serif; font-size: 13px; color: var(--text-dim); margin:0; }
+.send-all-btn{ background: var(--violet); color: #14102E; border:none; border-radius: 999px; font-family:'Space Grotesk', sans-serif; font-weight:700; font-size: 13px; padding: 10px 20px; cursor:pointer; }
+.send-all-btn:disabled{ opacity:0.6; cursor:default; }
+.outreach-status-pill{ font-family:'JetBrains Mono', monospace; font-size: 10.5px; padding: 5px 12px; border-radius: 999px; white-space: nowrap; }
+.outreach-status-pill.drafted{ color: var(--gold); background: var(--gold-dim); border:1px solid rgba(240,178,78,0.4); }
+.outreach-status-pill.sent{ color: var(--aurora); background: var(--aurora-dim); border:1px solid rgba(95,224,184,0.4); }
+.outreach-status-pill.undone{ color: var(--text-faint); background: var(--line-soft); border:1px solid var(--line); }
+.outreach-status-pill.auto-tag{ color: var(--violet); background: rgba(155,135,245,0.14); border:1px solid rgba(155,135,245,0.4); margin-left:6px; }
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+<div id="nav-root"></div>
+
+<div class="wrap">
+  <div class="page">
+    <div class="page-head">
+      <div class="eyebrow">For business</div>
+      <h1>Candidate search</h1>
+      <p>First look at promising, opted-in candidates - scored against the role you're actually hiring for.</p>
+    </div>
+
+    <div class="panel" id="registerPanel">
+      <h2>Your organization</h2>
+      <div class="sub">Register once to unlock candidate search.</div>
+      <label for="companyName">Company name</label>
+      <input type="text" id="companyName" placeholder="e.g. Fernway Labs">
+      <label for="contactEmail">Contact email</label>
+      <input type="text" id="contactEmail" placeholder="you@company.com">
+      <button class="btn violet block" id="registerBtn">Register &amp; continue</button>
+    </div>
+
+    <div class="panel hidden" id="hiringNeedPanel">
+      <h2>What are you hiring for?</h2>
+      <div class="sub">This is what every candidate gets scored against.</div>
+      <label for="roleTitle">Role title</label>
+      <input type="text" id="roleTitle" placeholder="e.g. Associate Product Manager">
+      <label for="requiredSkills">Required skills / what matters most</label>
+      <textarea id="requiredSkills" placeholder="e.g. SQL, Python, product analytics, A/B testing">SQL, product analytics, A/B testing, stakeholder communication</textarea>
+      <label for="mustHaves">Must-haves / dealbreakers</label>
+      <input type="text" id="mustHaves" placeholder="e.g. Must be open to relocation">
+      <button class="btn violet block" id="saveHiringNeedBtn">Save &amp; unlock candidate search</button>
+    </div>
+
+    <div id="searchArea" class="hidden">
+      <div class="panel" style="margin-bottom:20px;">
+        <h2>Hiring for: <span id="roleTitleDisplay"></span></h2>
+        <div class="sub" id="requiredSkillsDisplay"></div>
+        <a class="btn ghost" href="#" id="editHiringNeedBtn" style="margin-top:14px;">Edit hiring need</a>
+      </div>
+
+      <div class="panel" style="margin-bottom:20px;">
+        <h2>First-look access</h2>
+        <div class="sub">Purchase a window of early access to candidates who've opted in.</div>
+        <div class="stat-row">
+          <div class="stat-box"><div class="snum" id="accessStatus">Inactive</div><div class="slabel">Access status</div></div>
+          <div class="stat-box"><div class="snum" id="candidateCount">0</div><div class="slabel">Opted-in candidates</div></div>
+          <div class="stat-box"><div class="snum">$149</div><div class="slabel">30-day first look</div></div>
+        </div>
+        <button class="btn violet block" id="purchaseBtn">Purchase 30-day first-look access</button>
+        <div class="hint">Demo mode: simulates the purchase flow described in the backend spec. No real payment is collected here.</div>
+      </div>
+
+      <div class="panel" style="margin-bottom:20px;" id="autoHirePanel">
+        <div class="auto-hire-panel">
+          <div>
+            <h2 style="margin-bottom:0;">Auto-hire</h2>
+            <p class="mode-desc">When enabled, top-scoring candidates get an introduction message drafted automatically - no manual "Draft outreach" click needed. Nothing is ever sent without you reviewing it in the Outreach Inbox first.</p>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="autoHireToggle">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="threshold-inline" id="thresholdInline">
+          <label><span>Auto-draft threshold</span><span class="tval" id="thresholdVal">75%</span></label>
+          <input type="range" id="thresholdSlider" min="50" max="98" value="75">
+        </div>
+      </div>
+
+      <div class="chart-grid" style="margin-bottom:20px;">
+        <div class="chart-panel">
+          <h3>Pipeline outcomes</h3>
+          <div class="sub">Where candidates you've contacted have ended up.</div>
+          <div class="donut-row" id="hireDonut"></div>
+        </div>
+        <div class="chart-panel">
+          <h3>Pipeline strength</h3>
+          <div class="sub">A composite of active access, candidate pool size, and hire rate.</div>
+          <div class="gauge-wrap" id="pipelineGauge"></div>
+        </div>
+      </div>
+
+      <div class="chart-panel" style="margin-bottom:26px;">
+        <h3>Monthly hiring targets</h3>
+        <div class="sub">Hires actually made vs. your target pace, by month.</div>
+        <div id="hireTargetChart"></div>
+        <div class="target-summary" id="hireTargetSummary"></div>
+      </div>
+
+      <div class="section-toggle">
+        <button class="active" data-section="candidates" id="sectionCandBtn">Candidates</button>
+        <button data-section="outreach" id="sectionOutreachBtn">Outreach Inbox</button>
+      </div>
+
+      <div id="candidatesSection">
+        <div class="results-head">
+          <h2>Ranked candidates</h2>
+          <div class="results-count" id="candResultsCount">0 candidates</div>
+        </div>
+        <div id="candidateResults"></div>
+      </div>
+
+      <div id="outreachSection" class="hidden">
+        <div class="send-all-bar" id="sendAllBar" style="display:none;">
+          <p id="pendingOutreachCount"></p>
+          <button class="send-all-btn" id="sendAllBtn">Send all pending</button>
+        </div>
+        <div id="outreachInboxList"></div>
+      </div>
+    </div>
+  </div>
+  <footer>Velora is a demo - candidate data is illustrative, not real applicants; outreach shown here is an in-app introduction, not an external email.</footer>
+</div>
+
+<script src="state.js"></script>
+<script src="charts.js"></script>
+<script>
+window.addEventListener("error", function(e){
+  var msg = "Script error: " + e.message + " (in " + (e.filename ? e.filename.split("/").pop() : "unknown file") + ", line " + e.lineno + ")";
+  showDiagBanner(msg);
+});
+function showDiagBanner(msg){
+  if(document.getElementById("diagBanner")) return;
+  var b = document.createElement("div");
+  b.id = "diagBanner";
+  b.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;background:#B91C1C;color:#fff;padding:14px 20px;font-family:monospace;font-size:13px;text-align:center;";
+  b.textContent = "Velora failed to load correctly - " + msg + " - check that all files (especially state.js and styles.css) are uploaded with these EXACT lowercase names to the same folder.";
+  document.body.prepend(b);
+}
+setTimeout(function(){
+  if(typeof renderNav === "undefined" || typeof veloraMark === "undefined"){
+    showDiagBanner("state.js did not load (its functions are undefined). Check the file exists, is named exactly state.js, and sits in the same folder as this page.");
+  }
+}, 800);
+</script>
+<script>
+initStarfield();
+localStorage.setItem('velora_role', 'business');
+renderNav('business');
+
+const MOCK_CANDIDATES = [
+  {id:'c1', northstar: 'Break into data-focused product management', skills: 'SQL, Python, A/B testing, product analytics, roadmap planning', stage: 'Student', location: 'Remote / SF Bay Area', timeframe: '6-12 mo'},
+  {id:'c2', northstar: 'Transition into UX research from a design background', skills: 'Figma, user interviews, synthesis, prototyping', stage: 'Career switcher', location: 'Remote', timeframe: '1-2 yr'},
+  {id:'c3', northstar: 'Land a machine learning engineering role', skills: 'Python, PyTorch, SQL, ML pipelines, model evaluation', stage: 'Recent grad', location: 'Seattle, WA', timeframe: 'Now'},
+  {id:'c4', northstar: 'Move into technical program management', skills: 'Stakeholder management, SQL, process design, roadmap planning', stage: 'Currently working', location: 'Remote', timeframe: '1-2 yr'},
+  {id:'c5', northstar: 'Break into product management from a growth marketing background', skills: 'A/B testing, SQL, product analytics, growth experimentation', stage: 'Career switcher', location: 'Remote', timeframe: 'Now'},
+  {id:'c6', northstar: 'Become a data analyst supporting product decisions', skills: 'SQL, Python, dashboards, product analytics, stakeholder communication', stage: 'Student', location: 'Austin, TX', timeframe: '6-12 mo'},
+  {id:'c7', northstar: 'Grow into a senior product manager role', skills: 'Roadmap planning, stakeholder communication, SQL, user research', stage: 'Currently working', location: 'Remote', timeframe: '1-2 yr'},
+  {id:'c8', northstar: 'Land an entry-level software engineering role', skills: 'Python, SQL, backend development, testing', stage: 'Recent grad', location: 'Remote', timeframe: 'Now'},
+  {id:'c9', northstar: 'Move from customer support into product operations', skills: 'Process design, stakeholder communication, SQL, documentation', stage: 'Currently working', location: 'Remote', timeframe: '6-12 mo'},
+  {id:'c10', northstar: 'Land a first role in growth or lifecycle marketing', skills: 'A/B testing, product analytics, growth experimentation, SQL', stage: 'Recent grad', location: 'Remote', timeframe: 'Now'},
+];
+
+const registered = localStorage.getItem('velora_business_registered') === 'true';
+const hiringNeed = getHiringNeed();
+if(registered){ document.getElementById('registerPanel').classList.add('hidden'); }
+if(registered && hiringNeed){ document.getElementById('searchArea').classList.remove('hidden'); }
+else if(registered){ document.getElementById('hiringNeedPanel').classList.remove('hidden'); }
+
+function getHiringNeed(){ try{ return JSON.parse(localStorage.getItem('velora_hiring_need')); }catch(e){ return null; } }
+function saveHiringNeed(need){ localStorage.setItem('velora_hiring_need', JSON.stringify(need)); }
+function getBusinessPipeline(){ try{ return JSON.parse(localStorage.getItem('velora_business_pipeline')) || {}; }catch(e){ return {}; } }
+function saveBusinessPipeline(p){ localStorage.setItem('velora_business_pipeline', JSON.stringify(p)); }
+
+document.getElementById('registerBtn').addEventListener('click', ()=>{
+  const name = document.getElementById('companyName').value.trim();
+  const email = document.getElementById('contactEmail').value.trim();
+  if(!name || !email) return;
+  localStorage.setItem('velora_business_registered', 'true');
+  localStorage.setItem('velora_business_name', name);
+  document.getElementById('registerPanel').classList.add('hidden');
+  document.getElementById('hiringNeedPanel').classList.remove('hidden');
+});
+document.getElementById('saveHiringNeedBtn').addEventListener('click', ()=>{
+  const roleTitle = document.getElementById('roleTitle').value.trim();
+  const requiredSkills = document.getElementById('requiredSkills').value.trim();
+  if(!roleTitle || !requiredSkills) return;
+  saveHiringNeed({ roleTitle, requiredSkills, mustHaves: document.getElementById('mustHaves').value.trim() });
+  document.getElementById('hiringNeedPanel').classList.add('hidden');
+  document.getElementById('searchArea').classList.remove('hidden');
+  renderCandidates();
+});
+document.getElementById('editHiringNeedBtn').addEventListener('click', (e)=>{
+  e.preventDefault();
+  const need = getHiringNeed();
+  if(need){
+    document.getElementById('roleTitle').value = need.roleTitle;
+    document.getElementById('requiredSkills').value = need.requiredSkills;
+    document.getElementById('mustHaves').value = need.mustHaves || '';
+  }
+  document.getElementById('searchArea').classList.add('hidden');
+  document.getElementById('hiringNeedPanel').classList.remove('hidden');
+});
+document.getElementById('purchaseBtn').addEventListener('click', ()=>{
+  localStorage.setItem('velora_business_access', 'true');
+  renderCandidates();
+});
+
+/* ---------------- Auto-hire toggle ---------------- */
+const autoHireSettings = getAutoHireSettings();
+document.getElementById('autoHireToggle').checked = autoHireSettings.enabled;
+document.getElementById('thresholdSlider').value = autoHireSettings.threshold;
+document.getElementById('thresholdVal').textContent = autoHireSettings.threshold + '%';
+document.getElementById('thresholdInline').classList.toggle('show', autoHireSettings.enabled);
+
+document.getElementById('autoHireToggle').addEventListener('change', (e) => {
+  const s = getAutoHireSettings();
+  s.enabled = e.target.checked;
+  saveAutoHireSettings(s);
+  document.getElementById('thresholdInline').classList.toggle('show', s.enabled);
+  if(s.enabled) runAutoHire();
+});
+document.getElementById('thresholdSlider').addEventListener('input', (e) => {
+  document.getElementById('thresholdVal').textContent = e.target.value + '%';
+});
+document.getElementById('thresholdSlider').addEventListener('change', (e) => {
+  const s = getAutoHireSettings();
+  s.threshold = parseInt(e.target.value);
+  saveAutoHireSettings(s);
+});
+
+/* ---------------- Section toggle ---------------- */
+document.getElementById('sectionCandBtn').addEventListener('click', () => {
+  document.getElementById('sectionCandBtn').classList.add('active');
+  document.getElementById('sectionOutreachBtn').classList.remove('active');
+  document.getElementById('candidatesSection').classList.remove('hidden');
+  document.getElementById('outreachSection').classList.add('hidden');
+});
+document.getElementById('sectionOutreachBtn').addEventListener('click', () => {
+  document.getElementById('sectionOutreachBtn').classList.add('active');
+  document.getElementById('sectionCandBtn').classList.remove('active');
+  document.getElementById('outreachSection').classList.remove('hidden');
+  document.getElementById('candidatesSection').classList.add('hidden');
+  renderOutreachInbox();
+});
+
+function logHireEvent(status){
+  const hires = seedBusinessHiresIfEmpty();
+  hires.unshift({status, month: new Date().toLocaleString('en-US',{month:'short'})});
+  localStorage.setItem('velora_business_hires', JSON.stringify(hires));
+}
+
+function candidateRationale(candidate, matched, need){
+  if(matched.length === 0) return `Looser fit against "${need.roleTitle}" - no strong overlap with the required skills yet, but worth a look given their stated goal.`;
+  return `Matches on <b>${matched.slice(0,3).join(', ')}</b> - directly relevant to the required skills for ${need.roleTitle}, and their stated goal ("${candidate.northstar}") lines up with the role.`;
+}
+
+async function runAutoHire(){
+  const need = getHiringNeed();
+  const settings = getAutoHireSettings();
+  if(!settings.enabled || !need) return;
+  let drafted = 0;
+  for(const c of MOCK_CANDIDATES){
+    const skillTags = c.skills.split(',').map(s => s.trim());
+    const { pct } = scoreByOverlap(skillTags, need.requiredSkills);
+    if(pct < settings.threshold) continue;
+    const existing = getBusinessOutreachForCandidate(c.id);
+    if(existing) continue;
+    const draft = await draftBusinessIntroduction(c, need, true);
+    if(draft) drafted++;
+  }
+  if(drafted > 0){
+    addNotification({ type: 'auto_hire', title: `Auto-hire: ${drafted} introduction${drafted>1?'s':''} drafted`, detail: 'Review and send from the Outreach Inbox whenever you\'re ready.' });
+    renderCandidates();
+  }
+}
+
+function renderCandidates(){
+  const need = getHiringNeed();
+  const active = localStorage.getItem('velora_business_access') === 'true';
+  document.getElementById('accessStatus').textContent = active ? 'Active' : 'Inactive';
+  document.getElementById('candidateCount').textContent = active ? MOCK_CANDIDATES.length : 0;
+  if(need){
+    document.getElementById('roleTitleDisplay').textContent = need.roleTitle;
+    document.getElementById('requiredSkillsDisplay').textContent = need.requiredSkills;
+  }
+  const results = document.getElementById('candidateResults');
+  const countEl = document.getElementById('candResultsCount');
+  if(!active){
+    countEl.textContent = '0 candidates';
+    results.innerHTML = `<div class="empty-state"><div class="glyph">&#128274;</div>No active access.<div class="sub">Purchase first-look access above to view opted-in candidates.</div></div>`;
+    return;
+  }
+  const scored = MOCK_CANDIDATES.map(c => {
+    const skillTags = c.skills.split(',').map(s => s.trim());
+    const { pct, matched } = scoreByOverlap(skillTags, need.requiredSkills);
+    return { ...c, pct, matched };
+  }).sort((a,b) => b.pct - a.pct);
+
+  const pipeline = getBusinessPipeline();
+  countEl.textContent = `${scored.length} candidates`;
+  results.innerHTML = scored.map(c => {
+    const outreach = getBusinessOutreachForCandidate(c.id);
+    const pipelineStage = pipeline[c.id];
+    const color = c.pct >= 75 ? 'var(--aurora)' : c.pct >= 55 ? 'var(--violet)' : 'var(--text-faint)';
+    return `<div class="cand-card" data-id="${c.id}">
+      <div class="cand-body">
+        <div class="score-ring">${ringSvg(c.pct, color)}<span>${c.pct}%</span></div>
+        <div>
+          <div class="cand-top">
+            <div><p class="cand-title">${c.northstar}</p><div class="cand-meta">${c.stage} - ${c.location} - ${c.timeframe}</div></div>
+          </div>
+          <div class="cand-skills">${c.skills}</div>
+          <div class="cand-rationale">${candidateRationale(c, c.matched, need)}</div>
+          <div class="cand-deep" id="deep-${c.id}"></div>
+          <div class="cand-actions">
+            <button class="explain-deep-btn" data-id="${c.id}">Explain in depth</button>
+            ${!outreach ? `<button class="btn ghost" data-action="draft" data-id="${c.id}">Draft outreach</button>` : ''}
+            ${outreach && outreach.status === 'drafted' ? `<span class="outreach-status-pill drafted">Drafted${outreach.auto_generated ? '<span class="outreach-status-pill auto-tag">Auto</span>' : ''} - review in Outreach Inbox</span>` : ''}
+            ${outreach && outreach.status === 'sent' && pipelineStage ? `
+              <select class="stage-select" data-id="${c.id}">
+                <option value="contacted" ${pipelineStage==='contacted'?'selected':''}>Contacted</option>
+                <option value="interviewing" ${pipelineStage==='interviewing'?'selected':''}>Interviewing</option>
+                <option value="hired" ${pipelineStage==='hired'?'selected':''}>Hired</option>
+                <option value="passed" ${pipelineStage==='passed'?'selected':''}>Passed</option>
+              </select>` : ''}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  results.querySelectorAll('.explain-deep-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      const candidate = MOCK_CANDIDATES.find(c => c.id === id);
+      const container = document.getElementById('deep-' + id);
+      btn.disabled = true; btn.textContent = 'Thinking...';
+      container.innerHTML = `<p style="color:var(--text-faint); font-style:italic;">Generating a deeper assessment...</p>`;
+      container.classList.add('open');
+      const text = await explainCandidateFitDeep(candidate, need);
+      btn.disabled = false; btn.textContent = 'Explain in depth';
+      container.innerHTML = text || `<span style="color:var(--danger);">Couldn't generate this just now - try again.</span>`;
+    });
+  });
+  results.querySelectorAll('[data-action="draft"]').forEach(btn => {
+    btn.addEventListener('click', async ()=>{
+      const id = btn.dataset.id;
+      const candidate = MOCK_CANDIDATES.find(c => c.id === id);
+      btn.disabled = true; btn.textContent = 'Drafting...';
+      const draft = await draftBusinessIntroduction(candidate, need, false);
+      if(draft){
+        addNotification({ type: 'outreach', title: `Introduction drafted: ${candidate.northstar.split(' ').slice(0,4).join(' ')}...`, detail: 'Review it in the Outreach Inbox.' });
+      }
+      renderCandidates();
+    });
+  });
+  results.querySelectorAll('.stage-select').forEach(sel => {
+    sel.addEventListener('change', ()=>{
+      const id = sel.dataset.id;
+      const pipeline = getBusinessPipeline();
+      pipeline[id] = sel.value;
+      saveBusinessPipeline(pipeline);
+      logHireEvent(sel.value);
+      renderBusinessCharts();
+    });
+  });
+}
+
+function renderOutreachInbox(){
+  const items = getBusinessOutreach();
+  const list = document.getElementById('outreachInboxList');
+  const pending = items.filter(o => o.status === 'drafted');
+  const bar = document.getElementById('sendAllBar');
+  if(pending.length > 0){
+    bar.style.display = 'flex';
+    document.getElementById('pendingOutreachCount').textContent = `${pending.length} introduction${pending.length===1?'':'s'} ready to send`;
+  } else { bar.style.display = 'none'; }
+
+  if(items.length === 0){
+    list.innerHTML = `<div class="empty-state"><div class="glyph">&#9993;</div>No outreach drafted yet.<div class="sub">Click "Draft outreach" on a candidate, or enable Auto-hire above.</div></div>`;
+    return;
+  }
+  list.innerHTML = items.map(o => `<div class="cand-card" data-id="${o.id}">
+    <p class="cand-title">${o.candidate_label}</p>
+    <div class="cand-meta">Re: ${o.role_title}</div>
+    <span class="outreach-status-pill ${o.status}" style="margin-top:8px; display:inline-block;">${o.status === 'drafted' ? 'Needs review' : o.status === 'sent' ? 'Sent' : 'Discarded'}${o.auto_generated ? '<span class="outreach-status-pill auto-tag">Auto</span>' : ''}</span>
+    <textarea class="editable-field" data-id="${o.id}" ${o.status!=='drafted'?'disabled':''}>${o.body}</textarea>
+    <div class="cand-actions">
+      ${o.status === 'drafted' ? `<button class="btn" data-action="send-one" data-id="${o.id}">Send</button>` : ''}
+      ${o.status === 'drafted' ? `<button class="btn ghost" data-action="discard-one" data-id="${o.id}">Discard</button>` : ''}
+    </div>
+  </div>`).join('');
+
+  list.querySelectorAll('.editable-field').forEach(field => {
+    field.addEventListener('change', () => { updateBusinessOutreach(field.dataset.id, 'body', field.value); });
+  });
+  list.querySelectorAll('[data-action="send-one"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      sendBusinessOutreach(id);
+      const pipeline = getBusinessPipeline();
+      const draft = getBusinessOutreach().find(o => o.id === id);
+      if(draft){ pipeline[draft.candidate_id] = 'contacted'; saveBusinessPipeline(pipeline); logHireEvent('contacted'); }
+      renderOutreachInbox();
+      renderBusinessCharts();
+    });
+  });
+  list.querySelectorAll('[data-action="discard-one"]').forEach(btn => {
+    btn.addEventListener('click', () => { discardBusinessOutreach(btn.dataset.id); renderOutreachInbox(); });
+  });
+}
+
+document.getElementById('sendAllBtn').addEventListener('click', () => {
+  const sent = sendAllPendingBusinessOutreach();
+  const pipeline = getBusinessPipeline();
+  sent.forEach(o => { pipeline[o.candidate_id] = 'contacted'; logHireEvent('contacted'); });
+  saveBusinessPipeline(pipeline);
+  renderOutreachInbox();
+  renderBusinessCharts();
+});
+
+function renderBusinessCharts(){
+  const hires = seedBusinessHiresIfEmpty();
+  const statusColors = { hired: 'var(--aurora)', interviewing: 'var(--comet)', contacted: 'var(--gold)', passed: 'var(--text-faint)' };
+  const statusLabels = { hired: 'Hired', interviewing: 'Interviewing', contacted: 'Contacted', passed: 'Passed' };
+  const counts = {};
+  hires.forEach(h => { counts[h.status] = (counts[h.status] || 0) + 1; });
+  const segments = Object.keys(statusLabels).filter(k => counts[k]).map(k => ({ label: statusLabels[k], value: counts[k], color: statusColors[k] }));
+  document.getElementById('hireDonut').innerHTML = donutChart(segments, 130, 18) + donutLegend(segments);
+
+  const active = localStorage.getItem('velora_business_access') === 'true';
+  const hireCount = hires.filter(h => h.status === 'hired').length;
+  const hireRate = hires.length ? Math.round((hireCount / hires.length) * 100) : 0;
+  const pipelineScore = Math.round((active ? 40 : 10) + Math.min(30, MOCK_CANDIDATES.length * 3) + (hireRate * 0.3));
+  document.getElementById('pipelineGauge').innerHTML = gaugeChart(Math.min(100, pipelineScore), 130, 'var(--violet)') +
+    `<div class="gauge-value">${Math.min(100, pipelineScore)}</div><div class="gauge-label">Pipeline score</div>`;
+
+  const months = ['Jun', 'Jul', 'Aug'];
+  const monthly = monthlyTargetData(hires.filter(h => h.status === 'hired'), 2, months);
+  document.getElementById('hireTargetChart').innerHTML = barChart(monthly, {width: 400, height: 130});
+  const totalActual = monthly.reduce((s,m)=>s+m.actual, 0);
+  const totalTarget = monthly.reduce((s,m)=>s+m.target, 0);
+  document.getElementById('hireTargetSummary').innerHTML = `<span>Hires made: <b>${totalActual}</b> of ${totalTarget} targeted</span><span>Pace: <b>${Math.round((totalActual/totalTarget)*100)}%</b> of target</span>`;
+}
+
+if(registered && hiringNeed){
+  renderCandidates();
+  if(autoHireSettings.enabled) runAutoHire();
+}
+renderBusinessCharts();
+
+if(registered && hiringNeed){
+  injectMetisWidget(function(){
+    const need = getHiringNeed();
+    let ctx = `You are Metis, the built-in hiring guide inside "Velora". Answer questions about candidate screening, outreach messaging, interview strategy, and hiring decisions. Be concise and practical. Use **bold** sparingly and "- " for bullet lists.\n\n`;
+    ctx += `This business is hiring for: "${need.roleTitle}". Required skills: "${need.requiredSkills}". Must-haves: "${need.mustHaves || 'none stated'}".\n\n`;
+    const scored = MOCK_CANDIDATES.map(c => {
+      const skillTags = c.skills.split(',').map(s => s.trim());
+      const { pct } = scoreByOverlap(skillTags, need.requiredSkills);
+      return { ...c, pct };
+    }).sort((a,b) => b.pct - a.pct);
+    ctx += `Top-scoring candidates right now:\n`;
+    scored.slice(0,5).forEach(c => { ctx += `- ${c.northstar} - ${c.pct}% match - ${c.stage}, ${c.location}\n`; });
+    const outreach = getBusinessOutreach();
+    const pendingOutreach = outreach.filter(o => o.status === 'drafted').length;
+    const sentOutreach = outreach.filter(o => o.status === 'sent').length;
+    const pipeline = getBusinessPipeline();
+    const hiredCount = Object.values(pipeline).filter(s => s === 'hired').length;
+    ctx += `\nOutreach Inbox: ${pendingOutreach} introduction(s) drafted and awaiting send, ${sentOutreach} already sent. ${hiredCount} candidate(s) currently marked hired.`;
+    const autoSettings = getAutoHireSettings();
+    ctx += `\nAuto-hire is currently ${autoSettings.enabled ? `ON (threshold ${autoSettings.threshold}%)` : 'off'}.`;
+    ctx += `\n\nAll candidate data is illustrative demo data, not real applicants.`;
+    return ctx;
+  }, {
+    subtitle: 'Your AI hiring guide',
+    greeting: "Hi - I can help with candidate screening, outreach messages, or your hiring pipeline. What's on your mind?",
+    suggestions: [
+      { label: 'Improve my outreach', q: 'How can I make my candidate outreach messages more effective?' },
+      { label: 'Who should I prioritize?', q: 'Which of my current top candidates should I prioritize reaching out to first?' },
+      { label: "What's pending?", q: 'What outreach or pipeline items are waiting for my attention right now?' },
+    ],
+  });
+}
+</script>
+</body>
+</html>
