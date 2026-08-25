@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Waypoint — Velora</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.wp-grid{ display:grid; grid-template-columns: 1fr 300px; gap: 26px; align-items:start; }
+@media (max-width: 900px){ .wp-grid{ grid-template-columns: 1fr; } }
+.compose-panel textarea{ min-height: 90px; }
+.compose-row{ display:flex; gap:10px; align-items:center; margin-top: 10px; flex-wrap:wrap; }
+.compose-row input[type=text]{ flex:1; min-width: 180px; }
+.compose-tag-select{ font-family:'JetBrains Mono', monospace; font-size: 11px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--void); color: var(--text-dim); }
+
+.wp-post{ background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; margin-bottom: 16px; }
+.wp-post-head{ display:flex; justify-content:space-between; align-items:flex-start; gap: 12px; flex-wrap:wrap; }
+.wp-author{ display:flex; align-items:center; gap:10px; }
+.wp-avatar{ width:36px; height:36px; border-radius:50%; background: var(--void); border: 1px solid var(--line); display:flex; align-items:center; justify-content:center; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:12px; color: var(--gold); flex-shrink:0; }
+.wp-author-goal{ font-family:'Space Grotesk', sans-serif; font-size: 13.5px; font-weight:700; color: var(--text); max-width: 380px; }
+.wp-time{ font-family:'JetBrains Mono', monospace; font-size: 10.5px; color: var(--text-faint); }
+.wp-stage-badge{ font-family:'JetBrains Mono', monospace; font-size: 10px; color: var(--violet); background: var(--violet-dim); border: 1px solid rgba(155,135,245,0.4); padding: 4px 10px; border-radius: 999px; white-space:nowrap; }
+.wp-body{ font-family:'Manrope', sans-serif; font-size: 14px; color: var(--text); line-height: 1.6; margin: 14px 0; }
+.wp-video-note{ font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--comet); background: var(--void); border: 1px solid var(--line-soft); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; display:flex; align-items:center; gap:8px; }
+.wp-relevance{ font-family:'Manrope', sans-serif; font-size: 12px; color: var(--text-faint); padding: 8px 12px; background: var(--void); border-radius: 8px; margin-bottom: 12px; }
+.wp-relevance b{ color: var(--gold); }
+.wp-actions{ display:flex; gap: 10px; align-items:center; }
+.wp-action-btn{ background:none; border: 1px solid var(--line); border-radius: 999px; color: var(--text-dim); font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:0.03em; cursor:pointer; padding: 6px 14px; }
+.wp-action-btn:hover{ border-color: var(--gold); color: var(--gold); }
+.wp-action-btn.connected{ border-color: var(--aurora); color: var(--aurora); }
+.wp-deep{ margin-top: 10px; padding: 12px 14px; background: var(--void); border: 1px solid var(--gold); border-radius: 8px; font-family:'Manrope', sans-serif; font-size: 13px; line-height:1.55; color: var(--text); display:none; }
+.wp-deep.open{ display:block; }
+.wp-comments{ margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line-soft); display:none; }
+.wp-comments.open{ display:block; }
+.wp-comment{ font-family:'Manrope', sans-serif; font-size: 12.5px; color: var(--text-dim); padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
+.wp-comment-input-row{ display:flex; gap:8px; margin-top: 10px; }
+.wp-comment-input-row input{ flex:1; }
+
+.suggested-card{ background: var(--void); border: 1px solid var(--line-soft); border-radius: 10px; padding: 14px; margin-bottom: 10px; }
+.suggested-card .goal{ font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:12.5px; color:var(--text); margin: 0 0 6px; }
+.suggested-card .matched{ font-family:'JetBrains Mono', monospace; font-size: 10.5px; color: var(--text-faint); margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+<div id="nav-root"></div>
+
+<div class="wrap">
+  <div class="page">
+    <div class="page-head">
+      <div class="eyebrow">Waypoint</div>
+      <h1>A feed ranked by your roadmap, not your likes</h1>
+      <p>Every post here is ranked by real relevance to your goal - not engagement. You'll always see why something is showing up.</p>
+    </div>
+
+    <div id="noProfile" class="empty-state hidden">
+      <div class="glyph">&#10022;</div>
+      No survey answers yet.
+      <div class="sub">Complete the survey first so your feed can be ranked against your actual goal.</div>
+      <a class="btn" href="survey.html">Go to survey &rarr;</a>
+    </div>
+
+    <div id="waypointContent" class="hidden">
+      <div class="panel compose-panel" style="margin-bottom:26px;">
+        <h2>Share a waypoint</h2>
+        <div class="sub">Progress, a setback, a lesson - tag it to a roadmap stage so it means something to people on a similar path.</div>
+        <textarea id="postBody" placeholder="What's happening on your path right now?"></textarea>
+        <div class="compose-row">
+          <input type="text" id="postVideoUrl" placeholder="Optional: link to a video (YouTube, Loom, etc.)">
+          <select class="compose-tag-select" id="postStageSelect">
+            <option value="">No roadmap stage</option>
+          </select>
+          <button class="btn" id="postSubmitBtn">Post</button>
+        </div>
+      </div>
+
+      <div class="wp-grid">
+        <div>
+          <div class="results-head">
+            <h2>Your feed</h2>
+            <div class="results-count" id="feedCount">0 posts</div>
+          </div>
+          <div id="feedList"></div>
+        </div>
+        <div>
+          <div class="panel">
+            <h2>Suggested connections</h2>
+            <div class="sub">Ranked by overlap with your actual goal and skills.</div>
+            <div id="suggestedList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer>Velora is a demo - other people on Waypoint are illustrative personas, not real accounts. Video posts are links to wherever you already host your video, not an upload/hosting service.</footer>
+</div>
+
+<script src="state.js"></script>
+<script src="charts.js"></script>
+<script>
+window.addEventListener("error", function(e){
+  var msg = "Script error: " + e.message + " (in " + (e.filename ? e.filename.split("/").pop() : "unknown file") + ", line " + e.lineno + ")";
+  showDiagBanner(msg);
+});
+function showDiagBanner(msg){
+  if(document.getElementById("diagBanner")) return;
+  var b = document.createElement("div");
+  b.id = "diagBanner";
+  b.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;background:#B91C1C;color:#fff;padding:14px 20px;font-family:monospace;font-size:13px;text-align:center;";
+  b.textContent = "Velora failed to load correctly - " + msg + " - check that all files (especially state.js and styles.css) are uploaded with these EXACT lowercase names to the same folder.";
+  document.body.prepend(b);
+}
+setTimeout(function(){
+  if(typeof renderNav === "undefined" || typeof veloraMark === "undefined"){
+    showDiagBanner("state.js did not load (its functions are undefined). Check the file exists, is named exactly state.js, and sits in the same folder as this page.");
+  }
+}, 800);
+</script>
+<script>
+initStarfield();
+renderNav('waypoint');
+localStorage.setItem('velora_role', 'candidate');
+
+const profile = getProfile();
+if(!profile){
+  document.getElementById('noProfile').classList.remove('hidden');
+} else {
+  document.getElementById('waypointContent').classList.remove('hidden');
+}
+
+function initials(text){
+  const words = text.split(' ').filter(w => w.length > 2);
+  return (words[0]?.[0] || '') + (words[1]?.[0] || '');
+}
+function timeAgo(iso){
+  const diff = Date.now() - new Date(iso).getTime();
+  const days = Math.floor(diff / 86400000);
+  if(days === 0) return 'Today';
+  if(days === 1) return '1 day ago';
+  return `${days} days ago`;
+}
+
+function populateStageSelect(){
+  const roadmap = getRoadmap();
+  const select = document.getElementById('postStageSelect');
+  if(roadmap && roadmap.milestones){
+    roadmap.milestones.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.stage;
+      opt.textContent = `Stage ${m.stage}: ${m.title}`;
+      select.appendChild(opt);
+    });
+  }
+}
+
+function renderFeed(){
+  const posts = getWaypointPostsAll();
+  const scored = posts.map(post => {
+    const peer = post.own ? { northstar: profile.northstar, skills: profile.skills } : WAYPOINT_PEERS.find(p => p.id === post.peer_id);
+    const relevance = computePostRelevanceHeuristic(profile, post.body, peer);
+    return { ...post, peer, relevance };
+  }).sort((a,b) => b.relevance.score - a.relevance.score);
+
+  document.getElementById('feedCount').textContent = `${scored.length} posts`;
+  const roadmap = getRoadmap();
+
+  document.getElementById('feedList').innerHTML = scored.map(post => {
+    const conns = getWaypointConnections();
+    const connStatus = post.peer_id ? conns[post.peer_id] : null;
+    const relevanceLine = post.relevance.matchedTopicTerms.length
+      ? `Showing because it overlaps with <b>${post.relevance.matchedTopicTerms.slice(0,3).join(', ')}</b>${post.relevance.sameGoalDirection ? ' and they\'re working toward a similar goal' : ''}.`
+      : `Showing from your network - no strong topic overlap detected yet.`;
+    return `<div class="wp-post" data-post-id="${post.id}" data-peer-id="${post.peer_id || ''}">
+      <div class="wp-post-head">
+        <div class="wp-author">
+          <div class="wp-avatar">${post.own ? 'You' : initials(post.peer.northstar)}</div>
+          <div>
+            <div class="wp-author-goal">${post.own ? 'You' : post.peer.northstar}</div>
+            <div class="wp-time">${timeAgo(post.created_at)}</div>
+          </div>
+        </div>
+        ${post.roadmap_stage_title ? `<span class="wp-stage-badge">Stage ${post.roadmap_stage}: ${post.roadmap_stage_title}</span>` : ''}
+      </div>
+      <p class="wp-body">${post.body}</p>
+      ${post.video_url ? `<div class="wp-video-note">&#127909; Video: <a href="${post.video_url}" target="_blank" style="color:var(--comet);">${post.video_url}</a></div>` : ''}
+      ${!post.own ? `<div class="wp-relevance">${relevanceLine}</div>` : ''}
+      <div class="wp-actions">
+        ${!post.own ? `<button class="wp-action-btn" data-action="explain" data-post-id="${post.id}">Ask Metis why</button>` : ''}
+        ${!post.own ? `<button class="wp-action-btn ${connStatus === 'accepted' ? 'connected' : ''}" data-action="connect" data-peer-id="${post.peer_id}">${connStatus === 'accepted' ? 'Connected' : connStatus === 'pending' ? 'Request sent' : 'Connect'}</button>` : ''}
+        <button class="wp-action-btn" data-action="toggle-comments" data-post-id="${post.id}">Comments</button>
+      </div>
+      <div class="wp-deep" id="deep-${post.id}"></div>
+      <div class="wp-comments" id="comments-${post.id}">
+        <div id="commentsList-${post.id}"></div>
+        <div class="wp-comment-input-row">
+          <input type="text" id="commentInput-${post.id}" placeholder="Add a comment...">
+          <button class="btn ghost" data-action="add-comment" data-post-id="${post.id}">Send</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.querySelectorAll('[data-action="explain"]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const postId = btn.dataset.postId;
+      const post = scored.find(p => p.id === postId);
+      const container = document.getElementById('deep-' + postId);
+      btn.disabled = true; btn.textContent = 'Thinking...';
+      container.innerHTML = `<p style="color:var(--text-faint); font-style:italic;">Asking Metis...</p>`;
+      container.classList.add('open');
+      const text = await explainPostRelevanceDeep(profile, roadmap ? roadmap.summary : null, post.body, post.peer);
+      btn.disabled = false; btn.textContent = 'Ask Metis why';
+      container.innerHTML = text || `<span style="color:var(--danger);">Couldn't reach Metis just now - try again.</span>`;
+    });
+  });
+  document.querySelectorAll('[data-action="connect"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const peerId = btn.dataset.peerId;
+      const conns = getWaypointConnections();
+      if(conns[peerId] === 'accepted' || conns[peerId] === 'pending') return;
+      conns[peerId] = 'pending';
+      saveWaypointConnections(conns);
+      addNotification({ type: 'waypoint_connect', title: 'Connection request sent', detail: 'They\'ll need to accept before you\'re fully connected.' });
+      renderFeed();
+      renderSuggested();
+    });
+  });
+  document.querySelectorAll('[data-action="toggle-comments"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const postId = btn.dataset.postId;
+      const el = document.getElementById('comments-' + postId);
+      el.classList.toggle('open');
+      if(el.classList.contains('open')) renderComments(postId);
+    });
+  });
+  document.querySelectorAll('[data-action="add-comment"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const postId = btn.dataset.postId;
+      const input = document.getElementById('commentInput-' + postId);
+      if(!input.value.trim()) return;
+      addWaypointComment(postId, input.value.trim());
+      input.value = '';
+      renderComments(postId);
+    });
+  });
+}
+
+function renderComments(postId){
+  const comments = getWaypointComments(postId);
+  const list = document.getElementById('commentsList-' + postId);
+  list.innerHTML = comments.length
+    ? comments.map(c => `<div class="wp-comment">${c.body}</div>`).join('')
+    : `<div class="wp-comment" style="border:none; color:var(--text-faint); font-style:italic;">No comments yet.</div>`;
+}
+
+function renderSuggested(){
+  const conns = getWaypointConnections();
+  const scored = WAYPOINT_PEERS.map(peer => {
+    const relevance = computeConnectionRelevanceHeuristic(profile, peer);
+    return { ...peer, relevance };
+  }).filter(p => !conns[p.id]).sort((a,b) => b.relevance.score - a.relevance.score).slice(0, 4);
+
+  const list = document.getElementById('suggestedList');
+  if(scored.length === 0){ list.innerHTML = `<span class="hint">No new suggestions right now.</span>`; return; }
+  list.innerHTML = scored.map(p => `<div class="suggested-card" data-peer-id="${p.id}">
+    <p class="goal">${p.northstar}</p>
+    <div class="matched">${p.relevance.matchedTerms.length ? 'Overlaps on: ' + p.relevance.matchedTerms.slice(0,3).join(', ') : 'Different focus area'}</div>
+    <div class="wp-actions">
+      <button class="wp-action-btn" data-action="explain-connection" data-peer-id="${p.id}">Ask Metis why</button>
+      <button class="wp-action-btn" data-action="connect" data-peer-id="${p.id}">Connect</button>
+    </div>
+    <div class="wp-deep" id="deepconn-${p.id}"></div>
+  </div>`).join('');
+
+  list.querySelectorAll('[data-action="explain-connection"]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const peerId = btn.dataset.peerId;
+      const peer = WAYPOINT_PEERS.find(p => p.id === peerId);
+      const container = document.getElementById('deepconn-' + peerId);
+      btn.disabled = true; btn.textContent = 'Thinking...';
+      container.innerHTML = `<p style="color:var(--text-faint); font-style:italic; font-size:12px;">Asking Metis...</p>`;
+      container.classList.add('open');
+      const text = await explainConnectionRelevanceDeep(profile, peer);
+      btn.disabled = false; btn.textContent = 'Ask Metis why';
+      container.innerHTML = text ? `<span style="font-size:12px;">${text}</span>` : `<span style="color:var(--danger); font-size:12px;">Couldn't reach Metis - try again.</span>`;
+    });
+  });
+  list.querySelectorAll('[data-action="connect"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const peerId = btn.dataset.peerId;
+      const conns = getWaypointConnections();
+      conns[peerId] = 'pending';
+      saveWaypointConnections(conns);
+      addNotification({ type: 'waypoint_connect', title: 'Connection request sent', detail: 'They\'ll need to accept before you\'re fully connected.' });
+      renderFeed();
+      renderSuggested();
+    });
+  });
+}
+
+document.getElementById('postSubmitBtn')?.addEventListener('click', () => {
+  const body = document.getElementById('postBody').value.trim();
+  if(!body) return;
+  const videoUrl = document.getElementById('postVideoUrl').value.trim();
+  const stageSelect = document.getElementById('postStageSelect');
+  const roadmap = getRoadmap();
+  const stageNum = stageSelect.value ? parseInt(stageSelect.value) : null;
+  const stageTitle = stageNum && roadmap ? (roadmap.milestones.find(m => m.stage === stageNum) || {}).title : null;
+
+  saveOwnWaypointPost({
+    id: 'own_' + Date.now(),
+    own: true,
+    body,
+    video_url: videoUrl || null,
+    roadmap_stage: stageNum,
+    roadmap_stage_title: stageTitle,
+    created_at: new Date().toISOString(),
+  });
+  document.getElementById('postBody').value = '';
+  document.getElementById('postVideoUrl').value = '';
+  stageSelect.value = '';
+  renderFeed();
+});
+
+if(profile){
+  populateStageSelect();
+  renderFeed();
+  renderSuggested();
+
+  injectMetisWidget(function(){
+    let ctx = `You are Metis, the built-in career guide inside "Velora". You can also help with Waypoint, the roadmap-ranked social feed - answer questions about which posts or connections are worth their attention, and why. Be concise and practical.\n\n`;
+    ctx += `The user's goal: "${profile.northstar}". Skills: "${profile.skills}".\n`;
+    const roadmap = getRoadmap();
+    if(roadmap){ ctx += `Their roadmap strategy: ${roadmap.summary}\n`; }
+    ctx += `\nAll Waypoint peers and posts are illustrative demo personas, not real accounts.`;
+    return ctx;
+  }, {
+    subtitle: 'Your AI career guide',
+    greeting: "Hi - I can help you figure out which posts or connections on Waypoint are actually worth your time. What's on your mind?",
+    suggestions: [
+      { label: 'Who should I connect with?', q: 'Based on my roadmap, who in my suggested connections is actually worth reaching out to?' },
+      { label: 'Is this feed relevant?', q: 'Is my current Waypoint feed actually relevant to my roadmap right now?' },
+    ],
+  });
+}
+</script>
+</body>
+</html>
