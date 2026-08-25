@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Overview — Velora for Tutors</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.pipeline-row{ display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 14px; }
+.pipeline-box{ background: var(--void); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px; }
+.pipeline-box .pnum{ font-family:'Space Grotesk', sans-serif; font-weight: 700; font-size: 22px; color: var(--text); }
+.pipeline-box .plabel{ font-family:'JetBrains Mono', monospace; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-faint); margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+<div id="nav-root"></div>
+
+<div class="wrap">
+  <div class="page">
+    <div class="page-head">
+      <div class="eyebrow">Overview</div>
+      <h1>Your tutoring progress, in one place</h1>
+      <p>Everything your requests, responses, and Auto-accept have tracked so far.</p>
+    </div>
+
+    <div id="noProfile" class="empty-state hidden">
+      <div class="glyph">&#10022;</div>
+      No tutor application yet.
+      <div class="sub">Apply as a tutor first so your progress has something to track.</div>
+      <a class="btn" href="tutor-dashboard.html">Go to Tutor Dashboard &rarr;</a>
+    </div>
+
+    <div id="overviewContent" class="hidden">
+      <div class="stat-row" style="margin-bottom:26px;">
+        <div class="stat-box"><div class="snum" id="statSessionsCompleted">0</div><div class="slabel">Sessions completed</div></div>
+        <div class="stat-box"><div class="snum" id="statResponsesSent">0</div><div class="slabel">Responses sent</div></div>
+        <div class="stat-box"><div class="snum" id="statPendingResponses">0</div><div class="slabel">Needing review</div></div>
+        <div class="stat-box"><div class="snum" id="statCompletionRate">0%</div><div class="slabel">Completion rate</div></div>
+      </div>
+
+      <div class="chart-grid" style="margin-bottom:20px;">
+        <div class="chart-panel">
+          <h3>Session outcomes</h3>
+          <div class="sub">How your tutoring sessions have gone.</div>
+          <div class="donut-row" id="sessionDonut"></div>
+        </div>
+        <div class="chart-panel">
+          <h3>Tutoring impact</h3>
+          <div class="sub">A composite of completion rate, volume, and consistency.</div>
+          <div class="gauge-wrap" id="impactGauge"></div>
+        </div>
+      </div>
+
+      <div class="chart-panel" style="margin-bottom:26px;">
+        <h3>Monthly session targets</h3>
+        <div class="sub">Sessions completed vs. your target pace, by month.</div>
+        <div id="sessionTargetChart"></div>
+        <div class="target-summary" id="sessionTargetSummary"></div>
+      </div>
+
+      <div class="chart-panel">
+        <h3>Right now</h3>
+        <div class="sub">What's live in your Response Inbox and Auto-accept.</div>
+        <div class="pipeline-row" id="pipelineRow"></div>
+      </div>
+    </div>
+  </div>
+  <footer>Velora is a demo - request data is illustrative, not real students.</footer>
+</div>
+
+<script src="state.js"></script>
+<script src="charts.js"></script>
+<script>
+window.addEventListener("error", function(e){
+  var msg = "Script error: " + e.message + " (in " + (e.filename ? e.filename.split("/").pop() : "unknown file") + ", line " + e.lineno + ")";
+  showDiagBanner(msg);
+});
+function showDiagBanner(msg){
+  if(document.getElementById("diagBanner")) return;
+  var b = document.createElement("div");
+  b.id = "diagBanner";
+  b.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;background:#B91C1C;color:#fff;padding:14px 20px;font-family:monospace;font-size:13px;text-align:center;";
+  b.textContent = "Velora failed to load correctly - " + msg + " - check that all files (especially state.js and styles.css) are uploaded with these EXACT lowercase names to the same folder.";
+  document.body.prepend(b);
+}
+setTimeout(function(){
+  if(typeof renderNav === "undefined" || typeof veloraMark === "undefined"){
+    showDiagBanner("state.js did not load (its functions are undefined). Check the file exists, is named exactly state.js, and sits in the same folder as this page.");
+  }
+}, 800);
+</script>
+<script>
+initStarfield();
+localStorage.setItem('velora_role', 'tutor');
+renderNav('tutor-overview');
+
+function getTutorProfile(){ try{ return JSON.parse(localStorage.getItem('velora_tutor_profile')); }catch(e){ return null; } }
+function getTutorPipeline(){ try{ return JSON.parse(localStorage.getItem('velora_tutor_pipeline')) || {}; }catch(e){ return {}; } }
+function getSessionResponses(){ try{ return JSON.parse(localStorage.getItem('velora_session_responses')) || []; }catch(e){ return []; } }
+
+const applied = localStorage.getItem('velora_tutor_applied') === 'true';
+if(!applied){
+  document.getElementById('noProfile').classList.remove('hidden');
+} else {
+  document.getElementById('overviewContent').classList.remove('hidden');
+
+  const responses = getSessionResponses();
+  const pipeline = getTutorPipeline();
+  const pipelineValues = Object.values(pipeline);
+  const sessions = seedTutorSessionsIfEmpty();
+
+  const completedCount = sessions.filter(s => s.status === 'completed').length;
+  const completionRate = sessions.length ? Math.round((completedCount / sessions.length) * 100) : 0;
+
+  document.getElementById('statSessionsCompleted').textContent = completedCount;
+  document.getElementById('statResponsesSent').textContent = responses.filter(r => r.status === 'sent').length;
+  document.getElementById('statPendingResponses').textContent = responses.filter(r => r.status === 'drafted').length;
+  document.getElementById('statCompletionRate').textContent = completionRate + '%';
+
+  const statusColors = { completed: 'var(--aurora)', cancelled: 'var(--danger)', no_show: 'var(--text-faint)', accepted: 'var(--comet)' };
+  const statusLabels = { completed: 'Completed', cancelled: 'Cancelled', no_show: 'No-show', accepted: 'Accepted' };
+  const counts = {};
+  sessions.forEach(s => { counts[s.status] = (counts[s.status] || 0) + 1; });
+  const segments = Object.keys(statusLabels).filter(k => counts[k]).map(k => ({ label: statusLabels[k], value: counts[k], color: statusColors[k] }));
+  document.getElementById('sessionDonut').innerHTML = donutChart(segments, 130, 18) + donutLegend(segments);
+
+  const volumeScore = Math.min(40, completedCount * 5);
+  const impact = Math.round((completionRate * 0.5) + volumeScore);
+  document.getElementById('impactGauge').innerHTML = gaugeChart(Math.min(100, impact), 130, 'var(--aurora)') +
+    `<div class="gauge-value">${Math.min(100, impact)}</div><div class="gauge-label">Impact score</div>`;
+
+  const months = ['Jun', 'Jul', 'Aug'];
+  const monthly = monthlyTargetData(sessions.filter(s => s.status === 'completed'), 3, months);
+  document.getElementById('sessionTargetChart').innerHTML = barChart(monthly, {width: 400, height: 130});
+  const totalActual = monthly.reduce((s,m)=>s+m.actual, 0);
+  const totalTarget = monthly.reduce((s,m)=>s+m.target, 0);
+  document.getElementById('sessionTargetSummary').innerHTML = `<span>Sessions completed: <b>${totalActual}</b> of ${totalTarget} targeted</span><span>Pace: <b>${Math.round((totalActual/totalTarget)*100)}%</b> of target</span>`;
+
+  const draftedResponses = responses.filter(r => r.status === 'drafted').length;
+  const acceptedCount = pipelineValues.filter(s => s === 'accepted').length;
+  const cancelledCount = pipelineValues.filter(s => s === 'cancelled' || s === 'no_show').length;
+  const autoSettings = getAutoAcceptSettings();
+  document.getElementById('pipelineRow').innerHTML = `
+    <div class="pipeline-box"><div class="pnum">${draftedResponses}</div><div class="plabel">Responses needing review</div></div>
+    <div class="pipeline-box"><div class="pnum">${acceptedCount}</div><div class="plabel">Accepted</div></div>
+    <div class="pipeline-box"><div class="pnum">${completedCount}</div><div class="plabel">Completed</div></div>
+    <div class="pipeline-box"><div class="pnum">${cancelledCount}</div><div class="plabel">Cancelled / no-show</div></div>
+    <div class="pipeline-box"><div class="pnum" style="color:${autoSettings.enabled ? 'var(--aurora)' : 'var(--text-faint)'};">${autoSettings.enabled ? 'ON' : 'OFF'}</div><div class="plabel">Auto-accept${autoSettings.enabled ? ' - ' + autoSettings.threshold + '%' : ''}</div></div>
+  `;
+
+  const profile = getTutorProfile();
+  injectMetisWidget(function(){
+    let ctx = `You are Metis, the built-in guide inside "Velora" for tutors. Answer questions about the tutor's overall progress and what to prioritize next. Be concise and practical.\n\n`;
+    ctx += `This tutor's expertise: "${profile.skills}". ${draftedResponses} responses need review, ${completedCount} sessions completed so far.`;
+    return ctx;
+  }, {
+    subtitle: 'Your AI tutoring guide',
+    greeting: "Hi - I can help you make sense of your overall tutoring progress. What's on your mind?",
+    suggestions: [
+      { label: 'What should I focus on?', q: 'Looking at my overall tutoring stats, what should I focus on next?' },
+    ],
+  });
+}
+</script>
+</body>
+</html>
