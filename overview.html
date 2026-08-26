@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Overview — Velora</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.potential-grid{ display:grid; grid-template-columns: 160px 1fr; gap: 24px; align-items:center; }
+@media (max-width: 640px){ .potential-grid{ grid-template-columns: 1fr; } }
+.potential-breakdown{ display:flex; flex-direction:column; gap: 12px; }
+.pb-row{ display:grid; grid-template-columns: 110px 1fr 40px; align-items:center; gap: 10px; }
+.pb-label{ font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--text-dim); }
+.pb-track{ height: 8px; background: var(--line-soft); border-radius: 999px; overflow:hidden; }
+.pb-fill{ height:100%; border-radius:999px; }
+.pb-val{ font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--text-faint); text-align:right; }
+.pipeline-row{ display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 14px; }
+.pipeline-box{ background: var(--void); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px; }
+.pipeline-box .pnum{ font-family:'Space Grotesk', sans-serif; font-weight: 700; font-size: 22px; color: var(--text); }
+.pipeline-box .plabel{ font-family:'JetBrains Mono', monospace; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-faint); margin-top: 4px; }
+.trajectory-panel svg{ width:100%; height: 90px; }
+.mini-label{ display:flex; justify-content:space-between; font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-faint); margin-top:8px; }
+.type-bar-row{ margin-bottom: 12px; }
+.type-bar-head{ display:flex; justify-content:space-between; font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-dim); margin-bottom:5px; }
+.type-bar-track{ height:7px; background: var(--line-soft); border-radius:999px; overflow:hidden; }
+.type-bar-fill{ height:100%; border-radius:999px; }
+.gap-tag{ display:inline-block; background: var(--void); border: 1px solid var(--line-soft); border-radius: 999px; padding: 5px 12px; margin: 0 6px 8px 0; font-family:'Manrope', sans-serif; font-size: 12px; color: var(--text-dim); }
+.gap-tag b{ color: var(--gold); }
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+<div id="nav-root"></div>
+
+<div class="wrap">
+  <div class="page">
+    <div class="page-head">
+      <div class="eyebrow">Overview</div>
+      <h1>Your progress, in one place</h1>
+      <p>Everything the watch, roadmap, Workshop, and Auto mode have tracked so far.</p>
+    </div>
+
+    <div id="noProfile" class="empty-state hidden">
+      <div class="glyph">&#10022;</div>
+      No survey answers yet.
+      <div class="sub">Complete the survey first so your progress has something to track.</div>
+      <a class="btn" href="survey.html">Go to survey &rarr;</a>
+    </div>
+
+    <div id="overviewContent" class="hidden">
+      <div class="stat-row" style="margin-bottom:26px;">
+        <div class="stat-box"><div class="snum" id="statAvgMatch">-</div><div class="slabel">Avg match this cycle</div></div>
+        <div class="stat-box"><div class="snum" id="statSavedCount">0</div><div class="slabel">Saved opportunities</div></div>
+        <div class="stat-box"><div class="snum" id="statCyclesRun">0</div><div class="slabel">Scan cycles run</div></div>
+        <div class="stat-box"><div class="snum" id="statCurrentMatches">0</div><div class="slabel">Current matches</div></div>
+        <div class="stat-box"><div class="snum" id="statAppsSent">0</div><div class="slabel">Applications sent</div></div>
+        <div class="stat-box"><div class="snum" id="statOutreachSent">0</div><div class="slabel">Outreach sent</div></div>
+      </div>
+
+      <div class="chart-grid" style="margin-bottom:26px;">
+        <div class="chart-panel">
+          <h3>Application outcomes</h3>
+          <div class="sub">Where your applications have actually landed.</div>
+          <div class="donut-row" id="outcomeDonut"></div>
+        </div>
+        <div class="chart-panel">
+          <h3>Career potential</h3>
+          <div class="sub">A composite score, broken down into what's actually driving it.</div>
+          <div class="potential-grid">
+            <div class="gauge-wrap" id="potentialGauge"></div>
+            <div class="potential-breakdown" id="potentialBreakdown"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-panel" style="margin-bottom:26px;">
+        <h3>Monthly targets</h3>
+        <div class="sub">Applications actually sent vs. your target pace, by month.</div>
+        <div id="monthlyTargetChart"></div>
+        <div class="target-summary" id="targetSummary"></div>
+      </div>
+
+      <div class="chart-panel" style="margin-bottom:26px;">
+        <h3>Pipeline right now</h3>
+        <div class="sub">What's live in your Workshop and Auto queue.</div>
+        <div class="pipeline-row" id="pipelineRow"></div>
+      </div>
+
+      <div class="chart-grid" style="margin-bottom:26px;">
+        <div class="chart-panel trajectory-panel">
+          <h3>Trajectory</h3>
+          <div class="sub">Average match strength per cycle.</div>
+          <svg id="trajectorySvg" viewBox="0 0 260 90" preserveAspectRatio="none"></svg>
+          <div class="mini-label"><span>Cycle 1</span><span id="trajLatest">-</span></div>
+        </div>
+        <div class="chart-panel">
+          <h3>Mix this cycle</h3>
+          <div class="sub">Category breakdown of current matches.</div>
+          <div id="typeBreakdownArea"></div>
+        </div>
+      </div>
+
+      <div class="chart-panel" style="margin-bottom:26px;">
+        <h3>Roadmap progress</h3>
+        <div class="sub" id="roadmapProgressSub"></div>
+        <div class="pb-track" style="margin-bottom:10px;"><div class="pb-fill" id="roadmapProgressFill" style="background: linear-gradient(90deg, var(--aurora), var(--gold));"></div></div>
+        <a class="btn ghost" href="roadmap.html">View full roadmap &rarr;</a>
+      </div>
+
+      <div class="chart-panel" style="margin-bottom:26px;" id="calibrationPanel">
+        <h3>Is your match score actually trustworthy?</h3>
+        <div class="sub">Checked against your real logged outcomes - not assumed.</div>
+        <div id="calibrationContent"></div>
+      </div>
+
+      <div class="chart-panel">
+        <h3>Skill gaps</h3>
+        <div class="sub">Common in your top matches, not yet in your stated skills.</div>
+        <div id="gapTags"><span class="hint">Run a scan on Job Search to see suggestions.</span></div>
+      </div>
+    </div>
+  </div>
+  <footer>Velora is a demo - listings shown are illustrative, not live postings.</footer>
+</div>
+
+<script src="state.js"></script>
+<script src="charts.js"></script>
+<script>
+window.addEventListener("error", function(e){
+  var msg = "Script error: " + e.message + " (in " + (e.filename ? e.filename.split("/").pop() : "unknown file") + ", line " + e.lineno + ")";
+  showDiagBanner(msg);
+});
+function showDiagBanner(msg){
+  if(document.getElementById("diagBanner")) return;
+  var b = document.createElement("div");
+  b.id = "diagBanner";
+  b.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;background:#B91C1C;color:#fff;padding:14px 20px;font-family:monospace;font-size:13px;text-align:center;";
+  b.textContent = "Velora failed to load correctly - " + msg + " - check that all files (especially state.js and styles.css) are uploaded with these EXACT lowercase names to the same folder.";
+  document.body.prepend(b);
+}
+setTimeout(function(){
+  if(typeof renderNav === "undefined" || typeof veloraMark === "undefined"){
+    showDiagBanner("state.js did not load (its functions are undefined). Check the file exists, is named exactly state.js, and sits in the same folder as this page.");
+  }
+}, 800);
+</script>
+<script>
+initStarfield();
+renderNav('overview');
+localStorage.setItem('velora_role', 'candidate');
+
+const profile = getProfile();
+if(!profile){
+  document.getElementById('noProfile').classList.remove('hidden');
+} else {
+  document.getElementById('overviewContent').classList.remove('hidden');
+}
+
+if(profile){
+  const lastScored = getMatches();
+  const cycleCount = getCycleCount();
+  const trajectory = getTrajectory();
+  const savedIds = new Set(JSON.parse(localStorage.getItem('velora_saved_ids') || '[]'));
+  const apps = getApplications();
+  const outreach = getOutreachDrafts();
+
+  // ---- Top stat row ----
+  document.getElementById('statAvgMatch').textContent = (trajectory.length ? trajectory[trajectory.length-1] : 0) + '%';
+  document.getElementById('statSavedCount').textContent = savedIds.size;
+  document.getElementById('statCyclesRun').textContent = cycleCount;
+  document.getElementById('statCurrentMatches').textContent = lastScored.length;
+  document.getElementById('statAppsSent').textContent = apps.filter(a => a.status === 'sent').length;
+  document.getElementById('statOutreachSent').textContent = outreach.filter(o => o.status === 'sent').length;
+
+  // ---- Application outcomes donut ----
+  const outcomes = seedOutcomesIfEmpty();
+  const statusColors = { offer: 'var(--aurora)', interview: 'var(--comet)', applied: 'var(--gold)', rejected: 'var(--danger)', ghosted: 'var(--text-faint)' };
+  const statusLabels = { offer: 'Offers', interview: 'Interviews', applied: 'Applied (pending)', rejected: 'Rejected', ghosted: 'Ghosted' };
+  const counts = {};
+  outcomes.forEach(o => { counts[o.status] = (counts[o.status] || 0) + 1; });
+  const segments = Object.keys(statusLabels).filter(k => counts[k]).map(k => ({ label: statusLabels[k], value: counts[k], color: statusColors[k] }));
+  document.getElementById('outcomeDonut').innerHTML = donutChart(segments, 130, 18) + donutLegend(segments);
+
+  // ---- Career potential, now with a real visible breakdown of the 3 components ----
+  const roadmapData = getRoadmap();
+  const roadmapMilestones = roadmapData ? roadmapData.milestones : [];
+  const roadmapDone = roadmapMilestones.filter(m => m.status === 'done').length;
+  const roadmapProgress = roadmapMilestones.length ? Math.round((roadmapDone / roadmapMilestones.length) * 100) : 0;
+  const skillTokens = tokenize(profile.skills || '');
+  const skillStrength = Math.min(100, skillTokens.length * 8);
+  const matchQuality = lastScored.length ? Math.round(lastScored.reduce((s,l)=>s+l.pct,0)/lastScored.length) : 40;
+  const potential = Math.round((roadmapProgress * 0.3) + (skillStrength * 0.3) + (matchQuality * 0.4));
+  document.getElementById('potentialGauge').innerHTML = gaugeChart(potential, 130, 'var(--gold)') +
+    `<div class="gauge-value">${potential}</div><div class="gauge-label">Potential score</div>`;
+  const pbRows = [
+    { label: 'Roadmap progress', val: roadmapProgress, color: 'var(--aurora)' },
+    { label: 'Skill strength', val: skillStrength, color: 'var(--comet)' },
+    { label: 'Match quality', val: matchQuality, color: 'var(--gold)' },
+  ];
+  document.getElementById('potentialBreakdown').innerHTML = pbRows.map(r => `
+    <div class="pb-row">
+      <span class="pb-label">${r.label}</span>
+      <div class="pb-track"><div class="pb-fill" style="width:${r.val}%; background:${r.color};"></div></div>
+      <span class="pb-val">${r.val}%</span>
+    </div>`).join('');
+
+  // ---- Monthly targets ----
+  const months = ['Jun', 'Jul', 'Aug'];
+  const monthly = monthlyTargetData(outcomes, 8, months);
+  document.getElementById('monthlyTargetChart').innerHTML = barChart(monthly, {width: 400, height: 130});
+  const totalActual = monthly.reduce((s,m)=>s+m.actual, 0);
+  const totalTarget = monthly.reduce((s,m)=>s+m.target, 0);
+  document.getElementById('targetSummary').innerHTML = `<span>Applications sent: <b>${totalActual}</b> of ${totalTarget} targeted</span><span>Pace: <b>${Math.round((totalActual/totalTarget)*100)}%</b> of target</span>`;
+
+  // ---- Pipeline snapshot (new - real Workshop/Auto data pulled together) ----
+  const pendingApps = apps.filter(a => a.status === 'pending_review').length;
+  const approvedApps = apps.filter(a => a.status === 'approved').length;
+  const sentApps = apps.filter(a => a.status === 'sent').length;
+  const draftedOutreach = outreach.filter(o => o.status === 'drafted').length;
+  const sentOutreach = outreach.filter(o => o.status === 'sent').length;
+  const autoSettings = getAutoApplySettings();
+  document.getElementById('pipelineRow').innerHTML = `
+    <div class="pipeline-box"><div class="pnum">${pendingApps}</div><div class="plabel">Apps needing review</div></div>
+    <div class="pipeline-box"><div class="pnum">${approvedApps}</div><div class="plabel">Apps approved</div></div>
+    <div class="pipeline-box"><div class="pnum">${sentApps}</div><div class="plabel">Apps sent</div></div>
+    <div class="pipeline-box"><div class="pnum">${draftedOutreach}</div><div class="plabel">Outreach drafted</div></div>
+    <div class="pipeline-box"><div class="pnum">${sentOutreach}</div><div class="plabel">Outreach sent</div></div>
+    <div class="pipeline-box"><div class="pnum" style="color:${autoSettings.enabled ? 'var(--aurora)' : 'var(--text-faint)'};">${autoSettings.enabled ? 'ON' : 'OFF'}</div><div class="plabel">Auto mode${autoSettings.enabled ? ' - ' + autoSettings.threshold + '%' : ''}</div></div>
+  `;
+
+  // ---- Trajectory ----
+  const svg = document.getElementById('trajectorySvg');
+  if(trajectory.length){
+    const w = 260, h = 90, pad = 8;
+    const stepX = trajectory.length>1 ? (w-pad*2)/(trajectory.length-1) : 0;
+    const pts = trajectory.map((v,i)=> [pad + i*stepX, h - pad - (v/100)*(h-pad*2)]);
+    const line = pts.map(p=>p.join(',')).join(' ');
+    const areaPath = `M${pad},${h-pad} L` + pts.map(p=>p.join(',')).join(' L') + ` L${pts[pts.length-1][0]},${h-pad} Z`;
+    svg.innerHTML = `<defs><linearGradient id="trajFade" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#F0B24E" stop-opacity="0.3"/><stop offset="100%" stop-color="#F0B24E" stop-opacity="0"/></linearGradient></defs>
+      <path d="${areaPath}" fill="url(#trajFade)" stroke="none"/>
+      <polyline points="${line}" fill="none" stroke="#F0B24E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      ${pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="2.4" fill="#F0B24E"/>`).join('')}`;
+    document.getElementById('trajLatest').textContent = `Cycle ${trajectory.length} - ${trajectory[trajectory.length-1]}%`;
+  } else {
+    document.getElementById('trajLatest').textContent = 'No cycles run yet';
+  }
+
+  // ---- Type mix ----
+  const total = lastScored.length || 1;
+  const jobs = lastScored.filter(l=>l.type==='job').length, interns = lastScored.filter(l=>l.type==='internship').length, college = lastScored.filter(l=>l.type==='college').length, athletic = lastScored.filter(l=>l.type==='athletic').length;
+  const mixRows = [
+    { label: 'Jobs', pct: Math.round(jobs/total*100), color: 'var(--gold)' },
+    { label: 'Internships', pct: Math.round(interns/total*100), color: 'var(--aurora)' },
+    { label: 'College / Fellowship', pct: Math.round(college/total*100), color: 'var(--comet)' },
+    { label: 'Athletics', pct: Math.round(athletic/total*100), color: 'var(--violet)' },
+  ];
+  document.getElementById('typeBreakdownArea').innerHTML = mixRows.map(r => `
+    <div class="type-bar-row">
+      <div class="type-bar-head"><span>${r.label}</span><span>${r.pct}%</span></div>
+      <div class="type-bar-track"><div class="type-bar-fill" style="width:${r.pct}%; background:${r.color};"></div></div>
+    </div>`).join('');
+
+  // ---- Roadmap progress ----
+  document.getElementById('roadmapProgressSub').textContent = roadmapMilestones.length
+    ? `${roadmapDone} of ${roadmapMilestones.length} stages complete.`
+    : 'No roadmap generated yet.';
+  document.getElementById('roadmapProgressFill').style.width = roadmapProgress + '%';
+
+  // ---- Skill gaps ----
+  const goalTokens = tokenize(profile.northstar + ' ' + profile.finalidea);
+  const freq = {};
+  lastScored.slice(0,6).forEach(l=> l.tags.forEach(tag=>{
+    const known = skillTokens.some(t=> tag.includes(t)||t.includes(tag)) || goalTokens.some(t=> tag.includes(t)||t.includes(tag));
+    if(!known) freq[tag] = (freq[tag]||0)+1;
+  }));
+  const topGaps = Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,4);
+  document.getElementById('gapTags').innerHTML = topGaps.length===0
+    ? `<span class="hint">${lastScored.length ? 'Your profile already covers what\'s showing up.' : 'Run a scan on Job Search to see suggestions.'}</span>`
+    : topGaps.map(([tag,count])=>`<span class="gap-tag"><b>${tag}</b> x${count}</span>`).join('');
+
+  // ---- Confidence calibration: is the match score actually trustworthy? ----
+  const calibration = computeCalibration();
+  const calContainer = document.getElementById('calibrationContent');
+  if(calibration.totalWithOutcomes === 0){
+    calContainer.innerHTML = `<span class="hint">Log a real outcome (interview, offer, rejected, or ghosted) on a sent application in the Workshop to start building this.</span>`;
+  } else {
+    const bucketColors = { '80-100%': 'var(--aurora)', '60-79%': 'var(--gold)', 'below 60%': 'var(--text-faint)' };
+    const rows = Object.entries(calibration.buckets).map(([label, b]) => {
+      if(b.total === 0) return `<div class="pb-row"><span class="pb-label">${label}</span><span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint);">No outcomes logged yet</span></div>`;
+      return `<div class="pb-row">
+        <span class="pb-label">${label}</span>
+        <div class="pb-track"><div class="pb-fill" style="width:${b.positiveRate}%; background:${bucketColors[label]};"></div></div>
+        <span class="pb-val">${b.positiveRate}% (${b.total})</span>
+      </div>`;
+    }).join('');
+    const noteHtml = calibration.totalWithOutcomes < 5
+      ? `<p class="hint" style="margin-top:12px;">Based on only ${calibration.totalWithOutcomes} logged outcome${calibration.totalWithOutcomes===1?'':'s'} so far - not enough yet to draw a real conclusion. Keep logging outcomes as they happen.</p>`
+      : `<p class="hint" style="margin-top:12px;">Based on ${calibration.totalWithOutcomes} logged outcomes. If your 80-100% bucket isn't converting meaningfully better than your lower buckets, that's a real sign the score needs recalibrating for you specifically - not something to ignore.</p>`;
+    calContainer.innerHTML = `<div class="potential-breakdown">${rows}</div>${noteHtml}`;
+  }
+
+  injectMetisWidget(function(){
+    let ctx = `You are Metis, the built-in career guide inside "Velora". Answer questions about the user's overall progress, statistics, and what to focus on next. Be concise and practical.\n\n`;
+    ctx += `The user's goal: "${profile.northstar}". Current potential score: ${potential}/100 (roadmap progress ${roadmapProgress}%, skill strength ${skillStrength}%, match quality ${matchQuality}%). ${pendingApps} applications need review, ${draftedOutreach} outreach emails are drafted and unsent.`;
+    return ctx;
+  }, {
+    subtitle: 'Your AI career guide',
+    greeting: "Hi - I can help you make sense of your overall progress and what to prioritize next. What's on your mind?",
+    suggestions: [
+      { label: "What should I focus on?", q: 'Looking at my overall stats, what should I actually focus on next?' },
+      { label: "Why is my potential score what it is?", q: 'Explain my potential score breakdown and what would move it up the most.' },
+    ],
+  });
+}
+</script>
+</body>
+</html>
