@@ -1258,17 +1258,17 @@ function computeNearMisses(scoredAll, topN, nearMissN){
  
 /* ---- Mock listings dataset (now includes 'athletic') ---- */
 const LISTINGS = [
-  {id:1, type:'internship', title:'Product Analytics Intern', org:'Northlight Health', tags:['sql','python','a/b testing','analytics','product'], loc:'Remote', deadline:'Aug 22'},
+  {id:1, type:'internship', title:'Product Analytics Intern', org:'Northlight Health', tags:['sql','python','a/b testing','analytics','product'], loc:'Remote', deadline:'Sep 15'},
   {id:2, type:'job', title:'Associate Product Manager', org:'Fernway Labs', tags:['product','sql','roadmap','stakeholder','growth'], loc:'San Francisco, CA', deadline:'Sep 3'},
   {id:3, type:'college', title:'Data & Society Summer Fellowship', org:'Ridgeline Institute', tags:['data','research','fellowship','policy'], loc:'Remote', deadline:'Aug 30'},
   {id:4, type:'internship', title:'Growth & Experimentation Intern', org:'Cobalt Systems', tags:['a/b testing','python','growth','analytics'], loc:'Remote', deadline:'Sep 10'},
   {id:5, type:'job', title:'Business Analyst, New Grad Program', org:'Delmar Financial', tags:['sql','excel','reporting','finance'], loc:'Austin, TX', deadline:'Sep 18'},
-  {id:6, type:'college', title:'Undergraduate Research Grant - Applied Data Science', org:'Whitfield University', tags:['research','data','python','grant'], loc:'Remote', deadline:'Aug 25'},
+  {id:6, type:'college', title:'Undergraduate Research Grant - Applied Data Science', org:'Whitfield University', tags:['research','data','python','grant'], loc:'Remote', deadline:'Sep 24'},
   {id:7, type:'internship', title:'Product Management Intern', org:'Arclight', tags:['product','roadmap','sql','user research'], loc:'San Jose, CA', deadline:'Aug 29'},
   {id:8, type:'job', title:'Data-Focused PM (APM Program)', org:'Twin River', tags:['product','python','sql','analytics','a/b testing'], loc:'Remote', deadline:'Sep 5'},
   {id:9, type:'internship', title:'Operations Analytics Intern', org:'Foundry Retail', tags:['excel','sql','operations','reporting'], loc:'Chicago, IL', deadline:'Sep 1'},
   {id:10, type:'college', title:'Tech Policy & Data Ethics Fellowship', org:'Carrow Center', tags:['policy','research','fellowship','ethics'], loc:'Washington, DC', deadline:'Sep 12'},
-  {id:11, type:'job', title:'Junior Data Analyst', org:'Portside Analytics', tags:['sql','python','dashboards','reporting'], loc:'Remote', deadline:'Aug 27'},
+  {id:11, type:'job', title:'Junior Data Analyst', org:'Portside Analytics', tags:['sql','python','dashboards','reporting'], loc:'Remote', deadline:'Sep 21'},
   {id:12, type:'internship', title:'Campus Innovation Fellows Program', org:'Alder & Finch', tags:['leadership','product','pitch','mentorship'], loc:'Remote', deadline:'Sep 8'},
   {id:13, type:'job', title:'Product Operations Associate', org:'Cinderlake', tags:['product','sql','process','stakeholder'], loc:'Remote', deadline:'Sep 15'},
   {id:14, type:'college', title:'Quant Social Science Summer Institute', org:'Marrow College', tags:['research','python','data','stats'], loc:'Boston, MA', deadline:'Aug 31'},
@@ -1293,6 +1293,15 @@ const LISTINGS = [
   {id:33, type:'athletic', title:'Strength & Conditioning Coach', org:'Twin River Performance', tags:['athletics','strength training','coaching','conditioning'], loc:'Remote', deadline:'Oct 6'},
   {id:34, type:'athletic', title:'Sports Program Coordinator', org:'Beacon Peak Recreation', tags:['athletics','sports management','coordination','operations'], loc:'Seattle, WA', deadline:'Oct 15'},
   {id:35, type:'athletic', title:'Athletic Department Operations Assistant', org:'Marrow College Athletics', tags:['athletics','sports management','operations','stakeholder'], loc:'Boston, MA', deadline:'Sep 29'},
+  {id:36, type:'internship', title:'Software Engineering Intern', org:'Latchkey Systems', tags:['backend','software engineering','python','apis'], loc:'Remote', deadline:'Sep 12'},
+  {id:37, type:'job', title:'Backend Software Engineer', org:'Ironvale Cloud', tags:['backend','software engineering','python','systems'], loc:'Austin, TX', deadline:'Sep 20'},
+  {id:38, type:'job', title:'Full-Stack Engineer, New Grad', org:'Willowmere Tech', tags:['software engineering','javascript','backend','frontend'], loc:'Remote', deadline:'Sep 25'},
+  {id:39, type:'internship', title:'Platform Engineering Intern', org:'Cordage Systems', tags:['backend','software engineering','devops','systems'], loc:'Seattle, WA', deadline:'Oct 3'},
+  {id:40, type:'job', title:'Junior Software Developer', org:'Brightloom Labs', tags:['software engineering','backend','python','testing'], loc:'Chicago, IL', deadline:'Sep 18'},
+  {id:41, type:'college', title:'Software Engineering Fellowship', org:'Ashgrove Institute', tags:['software engineering','backend','fellowship','mentorship'], loc:'Remote', deadline:'Oct 10'},
+  {id:42, type:'internship', title:'Frontend Engineering Intern', org:'Millbrook Interactive', tags:['frontend','javascript','software engineering','ux'], loc:'Remote', deadline:'Sep 15'},
+  {id:43, type:'internship', title:'General Rotational Internship Program', org:'Fairhaven Group', tags:['operations','analytics','product','process'], loc:'Remote', deadline:'Sep 22'},
+  {id:44, type:'job', title:'Early Career Associate, Multiple Tracks', org:'Kestrel Partners', tags:['analytics','operations','strategy','process'], loc:'New York, NY', deadline:'Sep 28'},
 ];
  
 /* ---- Matching engine ---- */
