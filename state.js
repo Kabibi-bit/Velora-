@@ -1961,7 +1961,20 @@ async function generateInterviewPrep(companyName, roleTitle, companyResearch, pr
     const data = await response.json();
     let text = (data.content || []).map(b => b.type==='text'?b.text:'').filter(Boolean).join('\n');
     text = text.trim().replace(/^```json/,'').replace(/^```/,'').replace(/```$/,'').trim();
-    return JSON.parse(text);
+    const parsed = JSON.parse(text);
+    const shapeIsValid = Array.isArray(parsed.likely_questions) && Array.isArray(parsed.talking_points) &&
+      Array.isArray(parsed.questions_to_ask) && typeof parsed.roadmap_connection === 'string';
+    if(!shapeIsValid){
+      // A genuinely valid-JSON-but-incomplete response (missing a key,
+      // or the wrong type for one) must be treated the same as a
+      // parse failure, not passed through - otherwise renderInterviewPrep
+      // crashes on the first missing field with an uncaught error,
+      // leaving the person's UI silently stuck rather than showing the
+      // "couldn't generate this" message the caller already handles.
+      console.error('Interview prep response had an unexpected shape:', parsed);
+      return null;
+    }
+    return parsed;
   } catch(err){ console.error('Interview prep generation failed:', err); return null; }
 }
  
