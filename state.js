@@ -719,6 +719,16 @@ const RESUME_STOPWORDS = new Set([
   // nor adverb so the suffix rule can't catch them either
   'while','across','through','during','within','toward',
   'against','between','before','after',
+  // More irregular past-tense verbs found via systematically testing
+  // candidate words against the real filter, the same way the first
+  // batch above was found. Mirrors the backend exactly.
+  'read','sent','paid','lost','shot','stood','understood',
+  // Generic adjectives and frequency adverbs - not specific enough
+  // to be an actionable skill suggestion.
+  'great','good','strong','hard','able','often','never','always',
+  // Quantifiers and generic filler nouns, extending the existing
+  // categories above.
+  'lots','plenty','thing','stuff','part','parts','side','area','areas',
 ]);
 function meaningfulTokens(text){
   // -ed/-ly suffix rule catches regular past-tense verbs and
@@ -3070,3 +3080,4 @@ function injectMetisWidget(systemContextFn, opts){
     } finally { chatSend.disabled = false; }
   }
 }
+ 
