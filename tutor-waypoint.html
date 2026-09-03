@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Waypoint — Velora for Tutors</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+<div id="nav-root"></div>
+
+<div class="wrap">
+  <div class="page">
+    <div class="page-head">
+      <div class="eyebrow">Waypoint</div>
+      <h1>A private journal for your tutoring</h1>
+      <p>Log what's actually happening across your sessions - tag it to a phase, get an honest reflection on each entry, and a real pattern reflection once you've logged a few.</p>
+    </div>
+
+    <div id="noProfile" class="empty-state hidden">
+      <div class="glyph">&#10022;</div>
+      No tutor application yet.
+      <div class="sub">Apply as a tutor first, from the Tutor Dashboard.</div>
+      <a class="btn" href="tutor-dashboard.html">Go to Tutor Dashboard &rarr;</a>
+    </div>
+
+    <div id="waypointContent" class="hidden">
+      <div class="panel compose-panel" style="margin-bottom:26px;">
+        <h2>New entry</h2>
+        <div class="sub">Progress, a setback, a lesson - whatever's actually happening with your students.</div>
+        <textarea id="postBody" placeholder="What's happening in your tutoring right now?"></textarea>
+        <div class="compose-row">
+          <input type="text" id="postVideoUrl" placeholder="Optional: link to a video (e.g. a recorded session note)">
+          <select class="compose-tag-select" id="postStageSelect">
+            <option value="">No phase tag</option>
+            <option value="prep">Prep & planning</option>
+            <option value="session">Live session</option>
+            <option value="followup">Follow-up & feedback</option>
+            <option value="curriculum">Curriculum development</option>
+          </select>
+          <button class="btn" id="postSubmitBtn">Add entry</button>
+        </div>
+      </div>
+
+      <div class="pattern-panel hidden" id="patternPanel">
+        <h3>Reflect across your recent entries</h3>
+        <div class="sub">A single-entry reflection can only restate what you just wrote. This looks across several entries at once for a pattern you might not notice yourself.</div>
+        <button class="btn ghost" id="patternBtn">Reflect on my last 5 entries</button>
+        <div class="pattern-result" id="patternResult"></div>
+      </div>
+
+      <div class="results-head">
+        <h2>Your entries</h2>
+        <div class="results-count" id="entryCount">0 entries</div>
+      </div>
+      <input type="text" id="entrySearchInput" placeholder="Search your own entries..." style="width:100%; box-sizing:border-box; font-family:inherit; padding:9px 12px; margin-bottom:14px; border-radius:8px; border:1px solid var(--line); background:var(--void); color:var(--text);">
+      <div id="entryList"></div>
+    </div>
+  </div>
+  <footer>Velora is a demo - this is a private journal, not shared with anyone else.</footer>
+</div>
+
+<script src="state.js"></script>
+<script src="charts.js"></script>
+<script>
+window.addEventListener("error", function(e){
+  var msg = "Script error: " + e.message + " (in " + (e.filename ? e.filename.split("/").pop() : "unknown file") + ", line " + e.lineno + ")";
+  showDiagBanner(msg);
+});
+function showDiagBanner(msg){
+  if(document.getElementById("diagBanner")) return;
+  var b = document.createElement("div");
+  b.id = "diagBanner";
+  b.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;background:#B91C1C;color:#fff;padding:14px 20px;font-family:monospace;font-size:13px;text-align:center;";
+  b.textContent = "Velora failed to load correctly - " + msg + " - check that all files (especially state.js and styles.css) are uploaded with these EXACT lowercase names to the same folder.";
+  document.body.prepend(b);
+}
+setTimeout(function(){
+  if(typeof renderNav === "undefined" || typeof veloraMark === "undefined"){
+    showDiagBanner("state.js did not load (its functions are undefined). Check the file exists, is named exactly state.js, and sits in the same folder as this page.");
+  }
+}, 800);
+</script>
+<script>
+initStarfield();
+localStorage.setItem('velora_role', 'tutor');
+renderNav('tutor-waypoint');
+
+function getTutorProfile(){ try{ return JSON.parse(localStorage.getItem('velora_tutor_profile')); }catch(e){ return null; } }
+
+const STORAGE_KEY = 'velora_waypoint_tutor';
+const PHASE_LABELS = { prep: 'Prep & planning', session: 'Live session', followup: 'Follow-up & feedback', curriculum: 'Curriculum development' };
+const tutorProfile = getTutorProfile();
+if(!tutorProfile){
+  document.getElementById('noProfile').classList.remove('hidden');
+} else {
+  document.getElementById('waypointContent').classList.remove('hidden');
+}
+
+function getContextSummary(){
+  return tutorProfile ? `This tutor's expertise: ${tutorProfile.skills}.` : null;
+}
+
+const journalOpts = {
+  storageKey: STORAGE_KEY,
+  profile: tutorProfile ? { northstar: `Tutoring in ${tutorProfile.skills}`, skills: tutorProfile.skills } : {},
+  getContextSummary: getContextSummary,
+  listElId: 'entryList',
+  countElId: 'entryCount',
+  patternPanelId: 'patternPanel',
+  searchQuery: '',
+};
+
+document.getElementById('entrySearchInput')?.addEventListener('input', (e) => {
+  journalOpts.searchQuery = e.target.value;
+  renderWaypointJournal(journalOpts);
+});
+
+document.getElementById('postSubmitBtn')?.addEventListener('click', () => {
+  const body = document.getElementById('postBody').value.trim();
+  if(!body) return;
+  const videoUrl = document.getElementById('postVideoUrl').value.trim();
+  const stageSelect = document.getElementById('postStageSelect');
+  const phaseValue = stageSelect.value || null;
+
+  saveWaypointPost(STORAGE_KEY, {
+    id: 'entry_' + Date.now(),
+    body,
+    video_url: videoUrl || null,
+    tag_value: phaseValue,
+    tag_label: phaseValue ? PHASE_LABELS[phaseValue] : null,
+    created_at: new Date().toISOString(),
+  });
+  document.getElementById('postBody').value = '';
+  document.getElementById('postVideoUrl').value = '';
+  stageSelect.value = '';
+  renderWaypointJournal(journalOpts);
+});
+
+document.getElementById('patternBtn')?.addEventListener('click', async () => {
+  const entries = getWaypointPosts(STORAGE_KEY).slice(0, 5);
+  const btn = document.getElementById('patternBtn');
+  const result = document.getElementById('patternResult');
+  btn.disabled = true; btn.textContent = 'Looking across your entries...';
+  result.innerHTML = `<p style="color:var(--text-faint); font-style:italic;">Reflecting...</p>`;
+  result.classList.add('open');
+  const text = await reflectOnEntryPattern(journalOpts.profile, getContextSummary(), entries);
+  btn.disabled = false; btn.textContent = 'Reflect on my last 5 entries';
+  result.innerHTML = text || `<span style="color:var(--danger);">Couldn't reach Metis just now - try again.</span>`;
+});
+
+if(tutorProfile){
+  renderWaypointJournal(journalOpts);
+
+  injectMetisWidget(function(){
+    let ctx = `You are Metis, the built-in guide inside "Velora" for tutors. You can also help with Waypoint, this tutor's private journal - answer questions about what to log or how a recent entry connects to their tutoring practice. Be concise and practical.\n\n`;
+    ctx += `This tutor's expertise: "${tutorProfile.skills}". Bio: "${tutorProfile.bio || 'none stated'}".`;
+    return ctx;
+  }, {
+    subtitle: 'Your AI tutoring guide',
+    greeting: "Hi - I can help you think through a journal entry or how it connects to your tutoring. What's on your mind?",
+    suggestions: [
+      { label: 'What should I log?', q: 'What kind of progress is actually worth logging in my Waypoint journal right now?' },
+    ],
+  });
+}
+</script>
+</body>
+</html>
