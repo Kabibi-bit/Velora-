@@ -3043,17 +3043,17 @@ function injectMetisWidget(systemContextFn, opts){
   document.querySelectorAll('.chat-suggestion').forEach(btn=> btn.addEventListener('click', ()=>{ chatInput.value = btn.dataset.q; handleSend(); }));
  
   function escapeHtml(str){ const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+  function applyBold(str){ return str.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'); }
   function renderMarkdownLite(text){
     const escaped = escapeHtml(text);
     const lines = escaped.split('\n');
     let html = '', inList = false;
     lines.forEach(line=>{
-      const trimmed = line.trim();
+      const trimmed = applyBold(line.trim());
       if(/^[-*]\s+/.test(trimmed)){ if(!inList){ html += '<ul>'; inList = true; } html += `<li>${trimmed.replace(/^[-*]\s+/, '')}</li>`; }
       else { if(inList){ html += '</ul>'; inList = false; } if(trimmed.length) html += `<p>${trimmed}</p>`; }
     });
     if(inList) html += '</ul>';
-    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     return html || '<p></p>';
   }
   function appendMessage(role, text){
@@ -3077,9 +3077,10 @@ function injectMetisWidget(systemContextFn, opts){
     chatHistory.push({role:'user', content: text});
     appendTyping();
     try{
+      const historyForApi = chatHistory.length > 20 ? chatHistory.slice(-20) : chatHistory;
       const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 1000, system: systemContextFn(), messages: chatHistory })
+        body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 1000, system: systemContextFn(), messages: historyForApi })
       });
       const data = await response.json();
       removeTyping();
