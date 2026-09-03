@@ -1936,7 +1936,16 @@ function renderWaypointJournal(opts){
       const editEl = document.getElementById('edit-' + entryId);
       const editing = !editEl.classList.contains('hidden');
       if(editing){
-        updateWaypointPost(opts.storageKey, entryId, editEl.value.trim());
+        const newBody = editEl.value.trim();
+        if(!newBody){
+          // Mirrors the validation the create path already had -
+          // never save an edit that would leave a real, existing
+          // entry emptied out. Reverts the textarea back to the
+          // entry's real, current text instead of silently discarding it.
+          editEl.value = bodyEl.textContent;
+          return;
+        }
+        updateWaypointPost(opts.storageKey, entryId, newBody);
         renderWaypointJournal(opts);
       } else {
         bodyEl.classList.add('hidden');
@@ -3127,4 +3136,3 @@ function injectMetisWidget(systemContextFn, opts){
     } finally { chatSend.disabled = false; }
   }
 }
- 
