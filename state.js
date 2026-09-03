@@ -158,6 +158,7 @@ function addNotification(note){
   list.unshift({ ...note, id: Date.now() + Math.random(), ts: new Date().toISOString() });
   localStorage.setItem('velora_notifications', JSON.stringify(list.slice(0, 50)));
 }
+function clearNotifications(){ localStorage.setItem('velora_notifications', JSON.stringify([])); }
  
 /* ---- Applications / Workshop / Auto Apply ---- */
 const UNDO_WINDOW_MINUTES = 30;
@@ -3136,3 +3137,4 @@ function injectMetisWidget(systemContextFn, opts){
     } finally { chatSend.disabled = false; }
   }
 }
+ 
