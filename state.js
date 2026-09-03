@@ -3088,7 +3088,14 @@ function injectMetisWidget(systemContextFn, opts){
       if(!reply){ throw new Error('Empty response'); }
       appendMessage('assistant', reply);
       chatHistory.push({role:'assistant', content: reply});
-      saveChatHistory(chatHistory);
+      try{ saveChatHistory(chatHistory); }
+      catch(storageErr){
+        // A genuine storage failure here (e.g. quota exceeded, since
+        // chat history persists indefinitely) must not be reported as
+        // "couldn't reach Metis" - the reply above already succeeded
+        // and is already visible; only persistence for next time failed.
+        console.error('Saving chat history failed (reply above still succeeded):', storageErr);
+      }
     } catch(err){
       removeTyping();
       appendMessage('assistant', "Something went wrong reaching Metis just now - mind trying again?");
