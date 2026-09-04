@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pricing — Velora</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.mkt-nav{ position: sticky; top:0; z-index: 60; background: rgba(11,12,31,0.85); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.mkt-nav-inner{ display:flex; align-items:center; justify-content:space-between; padding: 16px 0; }
+.mkt-logo{ display:flex; align-items:center; gap:10px; text-decoration:none; }
+.mkt-logo-word{ font-family:'Space Grotesk', sans-serif; font-weight:800; font-size:16px; letter-spacing:0.06em; color: var(--text); }
+.mkt-links{ display:flex; align-items:center; gap:28px; }
+.mkt-link{ font-family:'Manrope', sans-serif; font-size:13.5px; color: var(--text-dim); text-decoration:none; }
+.mkt-link.active, .mkt-link:hover{ color: var(--gold); }
+.mkt-cta{ display:flex; align-items:center; gap:14px; }
+.mkt-cta-signup{ background: linear-gradient(135deg, #F7C878, #EAA23C); color:#241704; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; padding:9px 20px; border-radius:999px; text-decoration:none; }
+
+.pricing-head{ padding: 64px 0 8px; text-align:center; }
+.pricing-head .eyebrow{ font-family:'JetBrains Mono', monospace; font-size:11.5px; letter-spacing:0.08em; text-transform:uppercase; color: var(--gold); margin-bottom:16px; }
+.pricing-head h1{ font-family:'Space Grotesk', sans-serif; font-weight:800; font-size:42px; color:var(--text); margin:0 0 14px; letter-spacing:-0.01em; }
+.pricing-head p{ font-family:'Manrope', sans-serif; font-size:15.5px; color:var(--text-dim); max-width:520px; margin:0 auto 36px; line-height:1.6; }
+
+.role-tabs{ display:flex; justify-content:center; gap:8px; margin-bottom: 50px; flex-wrap:wrap; }
+.role-tabs button{ background: var(--panel); border: 1px solid var(--line); border-radius: 999px; color: var(--text-dim); font-family:'Space Grotesk', sans-serif; font-weight:700; font-size: 13px; padding: 10px 22px; cursor:pointer; }
+.role-tabs button.active{ background: var(--gold-dim); border-color: var(--gold); color: var(--gold); }
+
+.plans-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 22px; padding-bottom: 80px; }
+@media (max-width: 900px){ .plans-grid{ grid-template-columns: 1fr; } }
+.plan-card{ background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 32px 28px; display:flex; flex-direction:column; }
+.plan-card.featured{ border-color: var(--gold); background: linear-gradient(180deg, rgba(240,178,78,0.06), var(--panel) 40%); position:relative; }
+.plan-badge{ position:absolute; top:-12px; left:28px; background: var(--gold); color:#241704; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:10.5px; letter-spacing:0.04em; text-transform:uppercase; padding:5px 14px; border-radius:999px; }
+.plan-name{ font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:17px; color:var(--text); margin:0 0 6px; }
+.plan-price{ font-family:'Space Grotesk', sans-serif; font-weight:800; font-size:34px; color:var(--text); margin:0 0 4px; }
+.plan-price span{ font-family:'Manrope', sans-serif; font-weight:500; font-size:13px; color: var(--text-faint); }
+.plan-desc{ font-family:'Manrope', sans-serif; font-size:13px; color:var(--text-dim); margin:0 0 24px; line-height:1.5; }
+.plan-features{ list-style:none; padding:0; margin: 0 0 28px; flex:1; }
+.plan-features li{ font-family:'Manrope', sans-serif; font-size:13px; color:var(--text); padding: 9px 0; border-top: 1px solid var(--line-soft); display:flex; gap:10px; align-items:flex-start; }
+.plan-features li:first-child{ border-top:none; }
+.plan-features li .check{ color: var(--aurora); flex-shrink:0; margin-top:1px; }
+.plan-cta{ display:block; text-align:center; padding: 12px; border-radius: 999px; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13.5px; text-decoration:none; border: 1px solid var(--line); color: var(--text-dim); }
+.plan-cta.primary{ background: linear-gradient(135deg, #F7C878, #EAA23C); color:#241704; border:none; }
+.plan-cta:hover{ border-color: var(--gold); color: var(--gold); }
+
+.faq-section{ padding: 0 0 80px; max-width: 720px; margin: 0 auto; }
+.faq-section h2{ font-family:'Space Grotesk', sans-serif; font-weight:800; font-size:24px; color:var(--text); margin:0 0 28px; text-align:center; }
+.faq-item{ border-top: 1px solid var(--line-soft); padding: 20px 0; }
+.faq-item h4{ font-family:'Space Grotesk', sans-serif; font-size:14px; font-weight:700; color:var(--text); margin:0 0 8px; }
+.faq-item p{ font-family:'Manrope', sans-serif; font-size:13px; color:var(--text-dim); line-height:1.6; margin:0; }
+
+.mkt-footer{ border-top: 1px solid var(--line-soft); padding: 40px 0; }
+.mkt-footer-inner{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; }
+.mkt-footer-links{ display:flex; gap:24px; }
+.mkt-footer-links a{ font-family:'Manrope', sans-serif; font-size:12.5px; color: var(--text-faint); text-decoration:none; }
+.mkt-footer-links a:hover{ color: var(--text-dim); }
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+
+<nav class="mkt-nav">
+  <div class="wrap mkt-nav-inner">
+    <a class="mkt-logo" href="site-home.html" id="mktLogo"><span class="mkt-logo-word">VELORA</span></a>
+    <div class="mkt-links">
+      <a class="mkt-link" href="site-home.html">Product</a>
+      <a class="mkt-link active" href="site-pricing.html">Pricing</a>
+      <a class="mkt-link" href="site-reviews.html">Reviews</a>
+    </div>
+    <div class="mkt-cta">
+      <a class="mkt-link" href="login.html">Log in</a>
+      <a class="mkt-cta-signup" href="login.html?mode=signup">Get started</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="pricing-head">
+    <div class="eyebrow">PRICING</div>
+    <h1>Simple, per-role pricing</h1>
+    <p>Every plan includes the roadmap engine and Metis. Pick the tier that matches how deep you want the automation.</p>
+  </div>
+
+  <div class="role-tabs" id="roleTabs">
+    <button class="active" data-role="candidate">Candidates</button>
+    <button data-role="athlete">Athletes</button>
+    <button data-role="tutor">Tutors</button>
+  </div>
+
+  <div class="plans-grid" id="plansGrid"></div>
+
+  <div class="faq-section">
+    <h2>Common questions</h2>
+    <div class="faq-item">
+      <h4>Can I switch plans later?</h4>
+      <p>Yes - upgrade or downgrade at any time from your account. Changes apply to your next billing cycle.</p>
+    </div>
+    <div class="faq-item">
+      <h4>Does Auto mode cost extra?</h4>
+      <p>Auto mode (unattended drafting of applications and outreach) is included on Pro and above for every role. It's not available on free tiers.</p>
+    </div>
+    <div class="faq-item">
+      <h4>Is there a free trial for paid plans?</h4>
+      <p>Every paid plan starts with a 14-day trial - no card required to start, cancel anytime before it ends.</p>
+    </div>
+  </div>
+</div>
+
+<div class="mkt-footer">
+  <div class="wrap mkt-footer-inner">
+    <span class="mkt-logo-word" style="font-size:13px;">VELORA</span>
+    <div class="mkt-footer-links">
+      <a href="site-home.html">Product</a>
+      <a href="site-pricing.html">Pricing</a>
+      <a href="site-reviews.html">Reviews</a>
+      <a href="login.html">Log in</a>
+    </div>
+    <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint);">Velora is a demo product - pricing shown is illustrative.</span>
+  </div>
+</div>
+
+<script src="state.js"></script>
+<script>
+window.addEventListener("error", function(e){
+  var msg = "Script error: " + e.message + " (in " + (e.filename ? e.filename.split("/").pop() : "unknown file") + ", line " + e.lineno + ")";
+  showDiagBanner(msg);
+});
+function showDiagBanner(msg){
+  if(document.getElementById("diagBanner")) return;
+  var b = document.createElement("div");
+  b.id = "diagBanner";
+  b.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;background:#B91C1C;color:#fff;padding:14px 20px;font-family:monospace;font-size:13px;text-align:center;";
+  b.textContent = "Velora failed to load correctly - " + msg + " - check that all files (especially state.js and styles.css) are uploaded with these EXACT lowercase names to the same folder.";
+  document.body.prepend(b);
+}
+setTimeout(function(){
+  if(typeof initStarfield === "undefined" || typeof veloraMark === "undefined"){
+    showDiagBanner("state.js did not load (its functions are undefined). Check the file exists, is named exactly state.js, and sits in the same folder as this page.");
+  }
+}, 800);
+</script>
+<script>
+initStarfield();
+document.getElementById('mktLogo').insertAdjacentHTML('afterbegin', veloraMark(28));
+
+const PLANS = {
+  candidate: [
+    { name: 'Free', price: '$0', period: '', desc: 'Everything you need to start a real search.', features: ['Continuous opportunity watch', 'Roadmap with resources & risks', 'Metis AI guide', 'Manual application drafting'], cta: 'Get started', href: 'login.html?mode=signup&role=candidate' },
+    { name: 'Pro', price: '$12', period: '/mo', desc: 'For an active search across many opportunities.', features: ['Everything in Free', 'Auto mode - drafts while you\'re away', 'Deep AI match explanations', 'Referral outreach drafting'], featured: true, cta: 'Start free trial', href: 'login.html?mode=signup&role=candidate' },
+    { name: 'Unlimited', price: '$24', period: '/mo', desc: 'For power users running a full-time search.', features: ['Everything in Pro', 'Unlimited Auto-drafted applications', 'Priority Metis response time', 'Early access to new features'], cta: 'Start free trial', href: 'login.html?mode=signup&role=candidate' },
+  ],
+  athlete: [
+    { name: 'Free', price: '$0', period: '', desc: 'Recruiting and scholarship search, covered.', features: ['Athletic + sports-career watch', 'Sport-specific roadmap', 'Metis recruiting guide', 'Manual application drafting'], cta: 'Get started', href: 'login.html?mode=signup&role=athlete' },
+    { name: 'Pro', price: '$12', period: '/mo', desc: 'For active recruiting season.', features: ['Everything in Free', 'Auto mode for applications', 'Deep match explanations', 'Coach outreach drafting'], featured: true, cta: 'Start free trial', href: 'login.html?mode=signup&role=athlete' },
+    { name: 'Unlimited', price: '$24', period: '/mo', desc: 'For a full recruiting push.', features: ['Everything in Pro', 'Unlimited Auto-drafted applications', 'Priority Metis response time', 'Early access to new features'], cta: 'Start free trial', href: 'login.html?mode=signup&role=athlete' },
+  ],
+  tutor: [
+    { name: 'Free', price: '$0', period: '', desc: 'Apply and get matched to requests.', features: ['Ranked request matching', 'Manual session prep drafting', 'Metis tutoring guide'], cta: 'Get started', href: 'login.html?mode=signup&role=tutor' },
+    { name: 'Pro', price: '$9', period: '/mo', desc: 'For tutors taking on more students.', features: ['Everything in Free', 'Auto-accept drafting', 'Response Inbox', 'Deep fit assessments'], featured: true, cta: 'Start free trial', href: 'login.html?mode=signup&role=tutor' },
+  ],
+};
+
+function renderPlans(role){
+  const plans = PLANS[role];
+  document.getElementById('plansGrid').innerHTML = plans.map(p => `
+    <div class="plan-card ${p.featured ? 'featured' : ''}">
+      ${p.featured ? '<div class="plan-badge">Most popular</div>' : ''}
+      <p class="plan-name">${p.name}</p>
+      <p class="plan-price">${p.price}<span>${p.period}</span></p>
+      <p class="plan-desc">${p.desc}</p>
+      <ul class="plan-features">
+        ${p.features.map(f => `<li><span class="check">&#10003;</span>${f}</li>`).join('')}
+      </ul>
+      <a class="plan-cta ${p.featured ? 'primary' : ''}" href="${p.href}">${p.cta}</a>
+    </div>`).join('');
+}
+
+document.getElementById('roleTabs').querySelectorAll('button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#roleTabs button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderPlans(btn.dataset.role);
+  });
+});
+renderPlans('candidate');
+</script>
+</body>
+</html>
