@@ -91,16 +91,6 @@ function seedOutcomesIfEmpty(){
   saveOutcomes(outcomes);
   return outcomes;
 }
-function seedBusinessHiresIfEmpty(){
-  try{ const existing = JSON.parse(localStorage.getItem('velora_business_hires')); if(existing && existing.length) return existing; }catch(e){}
-  const hires = [
-    {status:'hired', month:'Jun'}, {status:'interviewing', month:'Jun'}, {status:'passed', month:'Jun'},
-    {status:'hired', month:'Jul'}, {status:'contacted', month:'Jul'}, {status:'passed', month:'Jul'},
-    {status:'interviewing', month:'Aug'}, {status:'hired', month:'Aug'}, {status:'contacted', month:'Aug'},
-  ];
-  localStorage.setItem('velora_business_hires', JSON.stringify(hires));
-  return hires;
-}
 function seedTutorSessionsIfEmpty(){
   try{ const existing = JSON.parse(localStorage.getItem('velora_tutor_sessions')); if(existing && existing.length) return existing; }catch(e){}
   const sessions = [
