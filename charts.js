@@ -91,16 +91,6 @@ function seedOutcomesIfEmpty(){
   saveOutcomes(outcomes);
   return outcomes;
 }
-function seedTutorSessionsIfEmpty(){
-  try{ const existing = JSON.parse(localStorage.getItem('velora_tutor_sessions')); if(existing && existing.length) return existing; }catch(e){}
-  const sessions = [
-    {status:'completed', month:'Jun'}, {status:'completed', month:'Jun'}, {status:'cancelled', month:'Jun'},
-    {status:'completed', month:'Jul'}, {status:'completed', month:'Jul'}, {status:'completed', month:'Jul'}, {status:'no_show', month:'Jul'},
-    {status:'completed', month:'Aug'}, {status:'completed', month:'Aug'},
-  ];
-  localStorage.setItem('velora_tutor_sessions', JSON.stringify(sessions));
-  return sessions;
-}
  
 function monthlyTargetData(records, targetPerMonth, months){
   return months.map(m => ({
