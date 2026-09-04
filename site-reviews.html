@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reviews — Velora</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.mkt-nav{ position: sticky; top:0; z-index: 60; background: rgba(11,12,31,0.85); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.mkt-nav-inner{ display:flex; align-items:center; justify-content:space-between; padding: 16px 0; }
+.mkt-logo{ display:flex; align-items:center; gap:10px; text-decoration:none; }
+.mkt-logo-word{ font-family:'Space Grotesk', sans-serif; font-weight:800; font-size:16px; letter-spacing:0.06em; color: var(--text); }
+.mkt-links{ display:flex; align-items:center; gap:28px; }
+.mkt-link{ font-family:'Manrope', sans-serif; font-size:13.5px; color: var(--text-dim); text-decoration:none; }
+.mkt-link.active, .mkt-link:hover{ color: var(--gold); }
+.mkt-cta{ display:flex; align-items:center; gap:14px; }
+.mkt-cta-signup{ background: linear-gradient(135deg, #F7C878, #EAA23C); color:#241704; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; padding:9px 20px; border-radius:999px; text-decoration:none; }
+
+.rev-head{ padding: 64px 0 8px; text-align:center; }
+.rev-head .eyebrow{ font-family:'JetBrains Mono', monospace; font-size:11.5px; letter-spacing:0.08em; text-transform:uppercase; color: var(--gold); margin-bottom:16px; }
+.rev-head h1{ font-family:'Space Grotesk', sans-serif; font-weight:800; font-size:42px; color:var(--text); margin:0 0 14px; letter-spacing:-0.01em; }
+.rev-head p{ font-family:'Manrope', sans-serif; font-size:15px; color:var(--text-dim); max-width:520px; margin:0 auto 12px; line-height:1.6; }
+.rev-disclosure{ display:inline-block; font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--text-faint); background: var(--void); border: 1px solid var(--line-soft); border-radius: 999px; padding: 7px 16px; margin-bottom: 40px; }
+
+.role-tabs{ display:flex; justify-content:center; gap:8px; margin-bottom: 44px; flex-wrap:wrap; }
+.role-tabs button{ background: var(--panel); border: 1px solid var(--line); border-radius: 999px; color: var(--text-dim); font-family:'Space Grotesk', sans-serif; font-weight:700; font-size: 13px; padding: 10px 22px; cursor:pointer; }
+.role-tabs button.active{ background: var(--gold-dim); border-color: var(--gold); color: var(--gold); }
+
+.reviews-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 20px; padding-bottom: 80px; }
+@media (max-width: 900px){ .reviews-grid{ grid-template-columns: 1fr; } }
+.review-card{ background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 26px; }
+.review-stars{ color: var(--gold); font-size: 13px; letter-spacing: 2px; margin-bottom: 14px; }
+.review-quote{ font-family:'Manrope', sans-serif; font-size:14px; color:var(--text); line-height:1.6; margin: 0 0 20px; }
+.review-person{ display:flex; align-items:center; gap:12px; }
+.review-avatar{ width:36px; height:36px; border-radius:50%; background: var(--void); border: 1px solid var(--line); display:flex; align-items:center; justify-content:center; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; color: var(--gold); flex-shrink:0; }
+.review-name{ font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:13px; color:var(--text); }
+.review-role{ font-family:'JetBrains Mono', monospace; font-size:10.5px; color:var(--text-faint); }
+
+.mkt-footer{ border-top: 1px solid var(--line-soft); padding: 40px 0; }
+.mkt-footer-inner{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; }
+.mkt-footer-links{ display:flex; gap:24px; }
+.mkt-footer-links a{ font-family:'Manrope', sans-serif; font-size:12.5px; color: var(--text-faint); text-decoration:none; }
+.mkt-footer-links a:hover{ color: var(--text-dim); }
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+
+<nav class="mkt-nav">
+  <div class="wrap mkt-nav-inner">
+    <a class="mkt-logo" href="site-home.html" id="mktLogo"><span class="mkt-logo-word">VELORA</span></a>
+    <div class="mkt-links">
+      <a class="mkt-link" href="site-home.html">Product</a>
+      <a class="mkt-link" href="site-pricing.html">Pricing</a>
+      <a class="mkt-link active" href="site-reviews.html">Reviews</a>
+    </div>
+    <div class="mkt-cta">
+      <a class="mkt-link" href="login.html">Log in</a>
+      <a class="mkt-cta-signup" href="login.html?mode=signup">Get started</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="rev-head">
+    <div class="eyebrow">REVIEWS</div>
+    <h1>What people are saying</h1>
+    <p>A sample of the kind of feedback Velora is built to earn.</p>
+    <div class="rev-disclosure">&#9432; Illustrative examples - Velora is a demo product, these are not verified customer accounts</div>
+  </div>
+
+  <div class="role-tabs" id="roleTabs">
+    <button class="active" data-role="candidate">Candidates</button>
+    <button data-role="tutor">Tutors</button>
+  </div>
+
+  <div class="reviews-grid" id="reviewsGrid"></div>
+</div>
+
+<div class="mkt-footer">
+  <div class="wrap mkt-footer-inner">
+    <span class="mkt-logo-word" style="font-size:13px;">VELORA</span>
+    <div class="mkt-footer-links">
+      <a href="site-home.html">Product</a>
+      <a href="site-pricing.html">Pricing</a>
+      <a href="site-reviews.html">Reviews</a>
+      <a href="login.html">Log in</a>
+    </div>
+    <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint);">Velora is a demo product - reviews shown are illustrative, not real accounts.</span>
+  </div>
+</div>
+
+<script src="state.js"></script>
+<script>
+window.addEventListener("error", function(e){
+  var msg = "Script error: " + e.message + " (in " + (e.filename ? e.filename.split("/").pop() : "unknown file") + ", line " + e.lineno + ")";
+  showDiagBanner(msg);
+});
+function showDiagBanner(msg){
+  if(document.getElementById("diagBanner")) return;
+  var b = document.createElement("div");
+  b.id = "diagBanner";
+  b.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;background:#B91C1C;color:#fff;padding:14px 20px;font-family:monospace;font-size:13px;text-align:center;";
+  b.textContent = "Velora failed to load correctly - " + msg + " - check that all files (especially state.js and styles.css) are uploaded with these EXACT lowercase names to the same folder.";
+  document.body.prepend(b);
+}
+setTimeout(function(){
+  if(typeof initStarfield === "undefined" || typeof veloraMark === "undefined"){
+    showDiagBanner("state.js did not load (its functions are undefined). Check the file exists, is named exactly state.js, and sits in the same folder as this page.");
+  }
+}, 800);
+</script>
+<script>
+initStarfield();
+document.getElementById('mktLogo').insertAdjacentHTML('afterbegin', veloraMark(28));
+
+const REVIEWS = {
+  candidate: [
+    { initials: 'J.M.', role: 'Recent grad, candidate', quote: 'The roadmap actually told me what to do this week, not just "network more." The first-step field is what got me to actually start.' },
+    { initials: 'A.T.', role: 'Career switcher, candidate', quote: 'I liked seeing why a match scored well instead of just trusting a number. It caught a role I would have skipped otherwise.' },
+    { initials: 'S.K.', role: 'Student, candidate', quote: 'Turned on Auto before a busy exam week and came back to three drafted applications waiting for review. Didn\'t miss a deadline.' },
+  ],
+  tutor: [
+    { initials: 'E.H.', role: 'SQL & Python, tutor', quote: 'The request matching actually understood the difference between "SQL basics" and "SQL window functions." Saved me from a bad-fit session.' },
+    { initials: 'P.G.', role: 'Product case interviews, tutor', quote: 'The session prep draft gave me a real starting point instead of a blank page every time.' },
+    { initials: 'T.J.', role: 'UX research, tutor', quote: 'Auto-accept queued up prep for a request while I was mid-session with someone else. Reviewed and sent it after.' },
+  ],
+};
+
+function renderReviews(role){
+  const reviews = REVIEWS[role];
+  document.getElementById('reviewsGrid').innerHTML = reviews.map(r => `
+    <div class="review-card">
+      <div class="review-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+      <p class="review-quote">"${r.quote}"</p>
+      <div class="review-person">
+        <div class="review-avatar">${r.initials}</div>
+        <div><div class="review-name">${r.initials}</div><div class="review-role">${r.role}</div></div>
+      </div>
+    </div>`).join('');
+}
+
+document.getElementById('roleTabs').querySelectorAll('button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#roleTabs button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderReviews(btn.dataset.role);
+  });
+});
+renderReviews('candidate');
+</script>
+</body>
+</html>
