@@ -43,14 +43,6 @@
         <label for="passwordInput">Password</label>
         <input type="password" id="passwordInput" placeholder="••••••••">
 
-        <div id="roleSelectArea" class="hidden">
-          <label>I'm here as a...</label>
-          <div class="role-select-row" id="roleChips">
-            <div class="chip active" data-val="candidate">Candidate</div>
-            <div class="chip" data-val="tutor">Tutor</div>
-          </div>
-        </div>
-
         <button class="btn block" id="submitBtn" style="margin-top:20px;">Log in</button>
         <div class="login-error" id="loginError"></div>
       </div>
@@ -90,37 +82,21 @@ let mode = 'login';
 const urlParams = new URLSearchParams(window.location.search);
 const preselectedRole = urlParams.get('role');
 const requestedMode = urlParams.get('mode');
-if(preselectedRole){
-  document.querySelectorAll('#roleChips .chip').forEach(c => c.classList.toggle('active', c.dataset.val === preselectedRole));
-}
 if(requestedMode === 'signup' || preselectedRole){
   setMode('signup');
 }
-
-document.getElementById('roleChips').querySelectorAll('.chip').forEach(chip => {
-  chip.addEventListener('click', () => {
-    document.querySelectorAll('#roleChips .chip').forEach(c => c.classList.remove('active'));
-    chip.classList.add('active');
-  });
-});
-function getSelectedRole(){ const el = document.querySelector('#roleChips .chip.active'); return el ? el.dataset.val : 'candidate'; }
 
 function setMode(newMode){
   mode = newMode;
   document.getElementById('loginTabBtn').classList.toggle('active', mode === 'login');
   document.getElementById('signupTabBtn').classList.toggle('active', mode === 'signup');
-  document.getElementById('roleSelectArea').classList.toggle('hidden', mode !== 'signup');
   document.getElementById('pageTitle').textContent = mode === 'login' ? 'Log in' : 'Create an account';
-  document.getElementById('pageSub').textContent = mode === 'login' ? 'Access your Velora account.' : 'Choose how you\'ll use Velora.';
+  document.getElementById('pageSub').textContent = mode === 'login' ? 'Access your Velora account.' : 'Create your Velora account.';
   document.getElementById('submitBtn').textContent = mode === 'login' ? 'Log in' : 'Sign up';
   document.getElementById('loginError').classList.remove('show');
 }
 document.getElementById('loginTabBtn').addEventListener('click', () => setMode('login'));
 document.getElementById('signupTabBtn').addEventListener('click', () => setMode('signup'));
-
-function roleHome(role){
-  return { tutor: 'tutor-dashboard.html' }[role] || 'survey.html';
-}
 
 document.getElementById('submitBtn').addEventListener('click', () => {
   const email = document.getElementById('emailInput').value.trim();
@@ -139,20 +115,9 @@ document.getElementById('submitBtn').addEventListener('click', () => {
     return;
   }
 
-  if(mode === 'signup'){
-    const role = getSelectedRole();
-    localStorage.setItem('velora_role', role);
-    saveSession({ email, role });
-    window.location.href = roleHome(role);
-  } else {
-    // Demo mode: no real backend to check the password against, so
-    // this just restores whatever role/session was last used for
-    // this browser rather than actually verifying credentials.
-    const existingSession = getSession();
-    const role = (existingSession && existingSession.email === email) ? existingSession.role : (localStorage.getItem('velora_role') || 'candidate');
-    saveSession({ email, role });
-    window.location.href = roleHome(role);
-  }
+  localStorage.setItem('velora_role', 'candidate');
+  saveSession({ email, role: 'candidate' });
+  window.location.href = 'survey.html';
 });
 
 document.getElementById('passwordInput').addEventListener('keydown', (e) => {
