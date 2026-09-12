@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auto — Velora</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.auto-wrap{ max-width: 720px; }
+.mode-panel{ background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; margin-bottom: 24px; }
+.mode-panel.active{ border-color: var(--gold); }
+.mode-head{ display:flex; justify-content:space-between; align-items:flex-start; gap: 16px; flex-wrap: wrap; }
+.mode-title{ font-family:'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; margin: 0 0 6px; }
+.mode-desc{ font-family:'Manrope', sans-serif; font-size: 14px; color: var(--text-dim); line-height: 1.6; max-width: 480px; margin: 0; }
+
+.toggle-switch{ position: relative; width: 54px; height: 30px; flex-shrink: 0; }
+.toggle-switch input{ opacity: 0; width: 0; height: 0; }
+.toggle-slider{ position: absolute; cursor: pointer; inset: 0; background: var(--line); border-radius: 999px; transition: all .2s ease; }
+.toggle-slider::before{ content: ''; position: absolute; height: 22px; width: 22px; left: 4px; top: 4px; background: var(--text); border-radius: 50%; transition: all .2s ease; }
+.toggle-switch input:checked + .toggle-slider{ background: linear-gradient(135deg, #F7C878, #EAA23C); }
+.toggle-switch input:checked + .toggle-slider::before{ transform: translateX(24px); background: #241704; }
+
+.threshold-row{ margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line-soft); }
+.threshold-row label{ display:flex; justify-content: space-between; margin: 0 0 10px; }
+.threshold-value{ color: var(--gold); font-family:'Space Grotesk', sans-serif; font-weight: 700; }
+input[type=range]{ width: 100%; accent-color: var(--gold); }
+.threshold-hint{ font-family:'Manrope', sans-serif; font-size: 12.5px; color: var(--text-faint); margin-top: 10px; line-height: 1.5; }
+
+.honesty-panel{ background: var(--void); border: 1px solid var(--danger); border-radius: var(--radius); padding: 20px 22px; margin-bottom: 28px; }
+.honesty-panel h3{ font-family:'Space Grotesk', sans-serif; font-size: 13px; font-weight: 700; color: var(--danger); text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 8px; }
+.honesty-panel p{ font-family:'Manrope', sans-serif; font-size: 13px; color: var(--text-dim); line-height: 1.55; margin: 0; }
+
+.activity-item{ background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin-bottom: 12px; display:flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; }
+.activity-title{ font-family:'Space Grotesk', sans-serif; font-weight: 700; font-size: 14px; margin: 0 0 3px; }
+.activity-meta{ font-family:'JetBrains Mono', monospace; font-size: 10.5px; color: var(--text-faint); }
+.activity-confidence{ font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--aurora); white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+<div id="nav-root"></div>
+
+<div class="wrap">
+  <div class="page">
+    <div class="page-head">
+      <div class="eyebrow">Auto</div>
+      <h1>Autonomous applications &amp; outreach</h1>
+      <p>When enabled, every scan automatically drafts and queues applications, and drafts referral outreach emails for matches worth reaching out to - no starring or clicking through cards required.</p>
+    </div>
+
+    <div class="auto-wrap">
+      <div class="honesty-panel">
+        <h3>Before you turn this on</h3>
+        <p>Auto drafts everything unattended - applications and outreach emails both - and queues it all in the Workshop. Nothing gets sent without you: every application still needs approval or clears your threshold with a 30-minute undo window, and every outreach email sits as a draft until you explicitly click Send (or "Send all pending") in the Workshop. Review the Workshop regularly while this is on.</p>
+      </div>
+
+      <div class="mode-panel" id="modePanel">
+        <div class="mode-head">
+          <div>
+            <p class="mode-title">Enable Auto</p>
+            <p class="mode-desc">Every scan cycle, Velora drafts a tailored application and a referral outreach email for each eligible match, auto-approving applications that clear your threshold below. Everything lands in the Workshop for review.</p>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="autoToggle">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="threshold-row">
+          <label>
+            <span>Auto-send confidence threshold</span>
+            <span class="threshold-value" id="thresholdValue">80%</span>
+          </label>
+          <input type="range" id="thresholdSlider" min="50" max="97" value="80">
+          <div class="threshold-hint">This is the real match score itself - roadmap alignment is already factored in as a graded part of that score, not a separate bonus on top. 97% is the real ceiling; no match ever scores higher. Lower the threshold to auto-approve more matches; raise it to keep more under manual review.</div>
+        </div>
+      </div>
+
+      <div class="results-head">
+        <h2>Auto-generated activity</h2>
+        <div class="results-count" id="activityCount">0 items</div>
+      </div>
+      <div id="activityList"></div>
+    </div>
+  </div>
+  <footer>Velora is a demo - Auto mode drafts and marks applications as sent within the app only.</footer>
+</div>
+
+<script src="state.js"></script>
+<script src="charts.js"></script>
+<script>
+window.addEventListener("error", function(e){
+  var msg = "Script error: " + e.message + " (in " + (e.filename ? e.filename.split("/").pop() : "unknown file") + ", line " + e.lineno + ")";
+  showDiagBanner(msg);
+});
+function showDiagBanner(msg){
+  if(document.getElementById("diagBanner")) return;
+  var b = document.createElement("div");
+  b.id = "diagBanner";
+  b.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;background:#B91C1C;color:#fff;padding:14px 20px;font-family:monospace;font-size:13px;text-align:center;";
+  b.textContent = "Velora failed to load correctly - " + msg + " - check that all files (especially state.js and styles.css) are uploaded with these EXACT lowercase names to the same folder.";
+  document.body.prepend(b);
+}
+setTimeout(function(){
+  if(typeof renderNav === "undefined" || typeof veloraMark === "undefined"){
+    showDiagBanner("state.js did not load (its functions are undefined). Check the file exists, is named exactly state.js, and sits in the same folder as this page.");
+  }
+}, 800);
+</script>
+<script>
+initStarfield();
+renderNav('auto');
+localStorage.setItem('velora_role', 'candidate');
+
+const autoToggle = document.getElementById('autoToggle');
+const thresholdSlider = document.getElementById('thresholdSlider');
+const thresholdValue = document.getElementById('thresholdValue');
+const modePanel = document.getElementById('modePanel');
+
+const settings = getAutoApplySettings();
+autoToggle.checked = settings.enabled;
+thresholdSlider.value = settings.threshold;
+thresholdValue.textContent = settings.threshold + '%';
+modePanel.classList.toggle('active', settings.enabled);
+
+autoToggle.addEventListener('change', () => {
+  const s = getAutoApplySettings();
+  s.enabled = autoToggle.checked;
+  saveAutoApplySettings(s);
+  modePanel.classList.toggle('active', s.enabled);
+  addNotification({
+    type: 'auto_apply',
+    title: s.enabled ? 'Auto Apply enabled' : 'Auto Apply disabled',
+    detail: s.enabled ? `Matches scoring ${s.threshold}%+ confidence will be auto-drafted and approved on your next scan.` : 'Applications will only be drafted when you star a match.',
+  });
+});
+
+thresholdSlider.addEventListener('input', () => {
+  thresholdValue.textContent = thresholdSlider.value + '%';
+});
+thresholdSlider.addEventListener('change', () => {
+  const s = getAutoApplySettings();
+  s.threshold = parseInt(thresholdSlider.value);
+  saveAutoApplySettings(s);
+});
+
+function timeRemaining(sendableAt){
+  const diff = new Date(sendableAt) - new Date();
+  if(diff <= 0) return null;
+  const mins = Math.ceil(diff / 60000);
+  return `${mins} minute${mins===1?'':'s'} left in the undo window`;
+}
+
+function getUrgencyScore(app, listing){
+  // Combines real confidence with real deadline proximity - a
+  // high-confidence match closing in 2 days should genuinely
+  // outrank an equally-confident one with no deadline pressure.
+  // Deadline weight decays smoothly rather than a hard cutoff, so a
+  // listing closing in exactly 8 vs 9 days doesn't jump categories.
+  let deadlineBoost = 0;
+  if(listing && listing.deadline){
+    const daysLeft = Math.ceil((new Date(listing.deadline) - new Date()) / 86400000);
+    if(daysLeft >= 0 && daysLeft <= 14){
+      deadlineBoost = Math.round((14 - daysLeft) / 14 * 30);
+    }
+  }
+  return (app.confidence_pct || 0) + deadlineBoost;
+}
+
+function renderActivity(){
+  const apps = getApplications().filter(a => a.auto_generated);
+  document.getElementById('activityCount').textContent = `${apps.length} item${apps.length===1?'':'s'}`;
+  const list = document.getElementById('activityList');
+  if(apps.length === 0){
+    list.innerHTML = `<div class="empty-state"><div class="glyph">&#9889;</div>No auto-generated applications yet.<div class="sub">Enable Auto above, then run a scan on the Job Search page - eligible matches will be drafted automatically.</div></div>`;
+    return;
+  }
+  const withListings = apps.map(a => ({ app: a, listing: LISTINGS.find(l => String(l.id) === String(a.listing_id)) }));
+  withListings.sort((a, b) => getUrgencyScore(b.app, b.listing) - getUrgencyScore(a.app, a.listing));
+
+  list.innerHTML = withListings.map(({app: a, listing}) => {
+    const remaining = a.status === 'approved' && a.sendable_at ? timeRemaining(a.sendable_at) : null;
+    const daysLeft = listing && listing.deadline ? Math.ceil((new Date(listing.deadline) - new Date()) / 86400000) : null;
+    const deadlineNote = (daysLeft !== null && daysLeft >= 0)
+      ? `<span style="color:${daysLeft <= 3 ? 'var(--danger)' : 'var(--text-faint)'};"> - ${daysLeft === 0 ? 'closes today' : `closes in ${daysLeft} day${daysLeft===1?'':'s'}`}</span>`
+      : '';
+    let actionHtml = '';
+    if(a.status === 'pending_review'){
+      actionHtml = `<button class="btn" data-action="approve" data-id="${a.id}">Approve</button>`;
+    } else if(a.status === 'approved' && remaining){
+      actionHtml = `<span class="activity-undo-note">${remaining}</span>`;
+    } else if(a.status === 'approved' && !remaining && listing && listing.apply_url){
+      actionHtml = `<a class="btn" href="${escapeForAttr(listing.apply_url)}" target="_blank" data-action="mark-sent" data-id="${a.id}">Open real application &rarr;</a>`;
+    }
+    return `
+    <div class="activity-item">
+      <div>
+        <p class="activity-title">${escapeForHtml(a.listing_title)}</p>
+        <div class="activity-meta">${escapeForHtml(a.listing_org)} - ${new Date(a.created_at).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}${deadlineNote}</div>
+      </div>
+      <div class="activity-confidence">${a.confidence_pct}% confidence${a.roadmap_aligned ? ' - roadmap-aligned' : ''}</div>
+      <div class="activity-queue-actions">
+        ${actionHtml}
+        <a href="workshop.html" style="color:var(--gold); font-size:12.5px;">${a.status === 'sent' ? 'sent' : 'review in Workshop'}</a>
+      </div>
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('[data-action="approve"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const apps2 = getApplications();
+      const app = apps2.find(a => a.id === btn.dataset.id);
+      if(!app) return;
+      app.status = 'approved';
+      app.sendable_at = new Date(Date.now() + UNDO_WINDOW_MINUTES * 60000).toISOString();
+      saveApplications(apps2);
+      renderActivity();
+    });
+  });
+  list.querySelectorAll('[data-action="mark-sent"]').forEach(a => {
+    a.addEventListener('click', () => {
+      const apps2 = getApplications();
+      const app = apps2.find(app2 => app2.id === a.dataset.id);
+      if(app){ app.status = 'sent'; app.sent_at = new Date().toISOString(); saveApplications(apps2); }
+      setTimeout(renderActivity, 300);
+    });
+  });
+}
+
+renderActivity();
+setInterval(renderActivity, 10000);
+</script>
+</body>
+</html>
