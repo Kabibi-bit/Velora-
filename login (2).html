@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Log in — Velora</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.login-wrap{ max-width: 420px; margin: 60px auto; }
+.login-toggle{ display:flex; gap: 8px; margin-bottom: 24px; }
+.login-toggle button{ flex:1; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; color: var(--text-dim); font-family:'Space Grotesk', sans-serif; font-weight:700; font-size: 13px; padding: 10px 0; cursor:pointer; }
+.login-toggle button.active{ background: var(--gold-dim); border-color: var(--gold); color: var(--gold); }
+.role-select-row{ display:grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+.role-select-row .chip{ text-align:center; }
+.login-error{ font-family:'Manrope', sans-serif; font-size: 12.5px; color: var(--danger); margin-top: 10px; display:none; }
+.login-error.show{ display:block; }
+.demo-note{ background: var(--void); border: 1px solid var(--line-soft); border-radius: 10px; padding: 14px 16px; margin-top: 20px; font-family:'Manrope', sans-serif; font-size: 12px; color: var(--text-faint); line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+<div id="nav-root"></div>
+
+<div class="wrap">
+  <div class="page">
+    <div class="login-wrap">
+      <div class="page-head" style="text-align:center;">
+        <div class="eyebrow">Welcome</div>
+        <h1 id="pageTitle">Log in</h1>
+        <p id="pageSub">Access your Velora account.</p>
+      </div>
+
+      <div class="login-toggle">
+        <button class="active" id="loginTabBtn">Log in</button>
+        <button id="signupTabBtn">Sign up</button>
+      </div>
+
+      <div class="panel">
+        <label for="emailInput">Email</label>
+        <input type="text" id="emailInput" placeholder="you@example.com">
+
+        <label for="passwordInput">Password</label>
+        <input type="password" id="passwordInput" placeholder="••••••••">
+
+        <button class="btn block" id="submitBtn" style="margin-top:20px;">Log in</button>
+        <div class="login-error" id="loginError"></div>
+      </div>
+
+      <div class="demo-note">This page now authenticates against the real backend - genuine password hashing and session tokens. Set <code>window.VELORA_API_BASE</code> to point at your deployed backend; it defaults to the production URL.</div>
+    </div>
+  </div>
+  <footer>Velora is a demo.</footer>
+</div>
+
+<script src="api.js"></script>
+<script src="state.js"></script>
+<script>
+window.addEventListener("error", function(e){
+  var msg = "Script error: " + e.message + " (in " + (e.filename ? e.filename.split("/").pop() : "unknown file") + ", line " + e.lineno + ")";
+  showDiagBanner(msg);
+});
+function showDiagBanner(msg){
+  if(document.getElementById("diagBanner")) return;
+  var b = document.createElement("div");
+  b.id = "diagBanner";
+  b.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;background:#B91C1C;color:#fff;padding:14px 20px;font-family:monospace;font-size:13px;text-align:center;";
+  b.textContent = "Velora failed to load correctly - " + msg + " - check that all files (especially state.js and styles.css) are uploaded with these EXACT lowercase names to the same folder.";
+  document.body.prepend(b);
+}
+setTimeout(function(){
+  if(typeof renderNav === "undefined" || typeof veloraMark === "undefined"){
+    showDiagBanner("state.js did not load (its functions are undefined). Check the file exists, is named exactly state.js, and sits in the same folder as this page.");
+  }
+}, 800);
+</script>
+<script>
+initStarfield();
+renderNav('login');
+
+let mode = 'login';
+
+const urlParams = new URLSearchParams(window.location.search);
+const preselectedRole = urlParams.get('role');
+const requestedMode = urlParams.get('mode');
+if(requestedMode === 'signup' || preselectedRole){
+  setMode('signup');
+}
+
+function setMode(newMode){
+  mode = newMode;
+  document.getElementById('loginTabBtn').classList.toggle('active', mode === 'login');
+  document.getElementById('signupTabBtn').classList.toggle('active', mode === 'signup');
+  document.getElementById('pageTitle').textContent = mode === 'login' ? 'Log in' : 'Create an account';
+  document.getElementById('pageSub').textContent = mode === 'login' ? 'Access your Velora account.' : 'Create your Velora account.';
+  document.getElementById('submitBtn').textContent = mode === 'login' ? 'Log in' : 'Sign up';
+  document.getElementById('loginError').classList.remove('show');
+}
+document.getElementById('loginTabBtn').addEventListener('click', () => setMode('login'));
+document.getElementById('signupTabBtn').addEventListener('click', () => setMode('signup'));
+
+document.getElementById('submitBtn').addEventListener('click', async () => {
+  const email = document.getElementById('emailInput').value.trim();
+  const password = document.getElementById('passwordInput').value;
+  const errorEl = document.getElementById('loginError');
+  const btn = document.getElementById('submitBtn');
+  errorEl.classList.remove('show');
+
+  if(!email || !email.includes('@')){
+    errorEl.textContent = 'Enter a valid email address.';
+    errorEl.classList.add('show');
+    return;
+  }
+  // 8 chars matches the backend's real signup validation - accepting
+  // less here would just get rejected by the server anyway.
+  if(!password || password.length < 8){
+    errorEl.textContent = 'Password must be at least 8 characters.';
+    errorEl.classList.add('show');
+    return;
+  }
+
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = mode === 'login' ? 'Signing in...' : 'Creating account...';
+
+  const result = mode === 'login'
+    ? await apiLogin(email, password)
+    : await apiSignup(email, password, 'candidate');
+
+  btn.disabled = false;
+  btn.textContent = originalText;
+
+  if(!result.ok){
+    // Surface the backend's real message (e.g. "Email already
+    // registered", "Invalid credentials") rather than a generic one.
+    errorEl.textContent = result.error || 'Something went wrong - please try again.';
+    errorEl.classList.add('show');
+    return;
+  }
+
+  // Success: the token is already stored by the connection layer.
+  // Also write the existing localStorage session so pages not yet
+  // converted to the backend continue to work during this transition.
+  const user = result.data;
+  localStorage.setItem('velora_role', user.role || 'candidate');
+  saveSession({ email: user.email, role: user.role || 'candidate', user_id: user.user_id });
+  // A returning user who logs in and already has a profile should go
+  // to their dashboard; a brand-new signup goes to the survey. We
+  // can't know their profile state until profile endpoints are
+  // converted too, so for now signup -> survey, login -> dashboard,
+  // which matches the most common real path for each.
+  window.location.href = mode === 'signup' ? 'survey.html' : 'dashboard.html';
+});
+
+document.getElementById('passwordInput').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') document.getElementById('submitBtn').click();
+});
+</script>
+</body>
+</html>
