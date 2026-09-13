@@ -2,7 +2,14 @@
 /* Pure SVG, no external library - built to match the existing
    design system (navy/gold/aurora/comet/violet). */
  
+// Shared escaper: chart labels are currently fixed strings, but these
+// are general-purpose rendering utilities - escaping keeps them safe
+// if a future caller ever passes a user- or AI-derived label,
+// consistent with the escaping applied everywhere else in the app.
+function _chartEsc(str){ return String(str == null ? '' : str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+ 
 function donutChart(segments, size, thickness){
+  segments = segments || [];
   size = size || 150; thickness = thickness || 20;
   const r = (size - thickness) / 2;
   const c = 2 * Math.PI * r;
@@ -24,10 +31,11 @@ function donutChart(segments, size, thickness){
 }
  
 function donutLegend(segments){
+  segments = segments || [];
   const total = segments.reduce((s, seg) => s + seg.value, 0) || 1;
   return `<div class="chart-legend">${segments.map(seg => {
     const pct = Math.round((seg.value/total)*100);
-    return `<div class="legend-row"><span class="legend-dot" style="background:${seg.color};"></span><span class="legend-label">${seg.label}</span><span class="legend-val">${seg.value} &middot; ${pct}%</span></div>`;
+    return `<div class="legend-row"><span class="legend-dot" style="background:${seg.color};"></span><span class="legend-label">${_chartEsc(seg.label)}</span><span class="legend-val">${seg.value} &middot; ${pct}%</span></div>`;
   }).join('')}</div>`;
 }
  
@@ -40,6 +48,7 @@ function gaugeChart(pct, size, color){
 }
  
 function barChart(data, opts){
+  data = data || [];
   opts = opts || {};
   const w = opts.width || 280, h = opts.height || 130, pad = 26;
   const maxVal = Math.max(...data.map(d => Math.max(d.target || 0, d.actual || 0)), 1);
@@ -54,13 +63,14 @@ function barChart(data, opts){
     return `
       <rect x="${x - barInnerW - 2}" y="${baseline - targetH}" width="${barInnerW}" height="${targetH}" rx="2" fill="var(--line)"/>
       <rect x="${x + 2}" y="${baseline - actualH}" width="${barInnerW}" height="${actualH}" rx="2" fill="${hitTarget ? 'var(--aurora)' : 'var(--gold)'}"/>
-      <text x="${x}" y="${h - 6}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="var(--text-faint)">${d.label}</text>
+      <text x="${x}" y="${h - 6}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="var(--text-faint)">${_chartEsc(d.label)}</text>
     `;
   }).join('');
   return `<svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">${bars}</svg>`;
 }
  
 function trendArea(values, opts){
+  values = values || [];
   opts = opts || {};
   const w = opts.width || 260, h = opts.height || 70, pad = 8;
   const color = opts.color || '#F0B24E';
