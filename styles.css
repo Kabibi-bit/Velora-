@@ -255,3 +255,70 @@ footer{ margin-top: 64px; padding: 32px 0; border-top: 1px solid var(--line-soft
 .pattern-result{ margin-top: 14px; padding: 14px 16px; background: var(--void); border: 1px solid var(--violet); border-radius: 8px; font-family:'Manrope', sans-serif; font-size: 13.5px; line-height: 1.6; color: var(--text); display:none; }
 .pattern-result.open{ display:block; }
  
+/* ============================================================
+   FRONTEND ELEVATION — applies to every app page via styles.css.
+   Refines the shared panel/nav/button/heading system to match the
+   premium marketing aesthetic. Additive; preserves existing layout.
+   ============================================================ */
+ 
+/* --- Panels: gradient hairline edge + glass depth + hover lift --- */
+.panel{
+  background: linear-gradient(180deg, rgba(30,33,64,0.55), rgba(23,25,51,0.72));
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  box-shadow: 0 2px 22px -14px rgba(0,0,0,0.85);
+  position: relative;
+  transition: transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s ease, border-color .2s ease;
+}
+.panel::before{
+  content:''; position:absolute; inset:0; border-radius:inherit; padding:1px;
+  background: linear-gradient(135deg, rgba(155,135,245,0.35), rgba(95,224,184,0.16) 45%, transparent 72%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  opacity:0.5; transition: opacity .2s ease; pointer-events:none;
+}
+/* Only lift panels that are meant to feel interactive/standalone (not stacked form panels).
+   Keep it subtle so dense dashboards don't feel jittery. */
+.panel:hover::before{ opacity:0.85; }
+ 
+/* --- Page heading: refined gradient on the eyebrow accent --- */
+.page-head .eyebrow{
+  background: linear-gradient(100deg, #F7C878, #EAA23C 50%, #F7D89A);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.page-head h1{ letter-spacing: -0.015em; }
+ 
+/* --- Primary button: depth + glow + lift (matches marketing CTAs) --- */
+.btn{
+  box-shadow: 0 8px 22px -8px rgba(240,178,78,0.5), inset 0 1px 0 rgba(255,255,255,0.32);
+  transition: transform .18s cubic-bezier(.2,.8,.2,1), box-shadow .18s ease, filter .15s ease;
+}
+.btn:hover{ transform: translateY(-2px); box-shadow: 0 14px 32px -8px rgba(240,178,78,0.62), inset 0 1px 0 rgba(255,255,255,0.4); filter: brightness(1.04); }
+.btn:active{ transform: translateY(0); }
+.btn.violet{ box-shadow: 0 8px 22px -8px rgba(155,135,245,0.5), inset 0 1px 0 rgba(255,255,255,0.3); }
+.btn.violet:hover{ box-shadow: 0 14px 32px -8px rgba(155,135,245,0.62), inset 0 1px 0 rgba(255,255,255,0.38); }
+.btn.ghost, .btn.stop{ box-shadow:none; }
+.btn.ghost:hover, .btn.stop:hover{ transform: translateY(-1px); box-shadow:none; }
+ 
+/* --- Nav: crisper glass + refined active pill --- */
+.nav{ background: rgba(11,12,31,0.74); backdrop-filter: blur(16px) saturate(1.2); }
+.nav-link{ transition: color .15s ease, background .15s ease, border-color .15s ease, transform .12s ease; }
+.nav-link:hover{ transform: translateY(-1px); }
+.nav-link.active{ box-shadow: 0 0 16px -6px rgba(240,178,78,0.5); }
+ 
+/* --- Chips: subtle depth + smoother active state --- */
+.chip{ transition: all .16s cubic-bezier(.2,.8,.2,1); }
+.chip:hover{ transform: translateY(-1px); border-color: var(--text-faint); color: var(--text); }
+ 
+/* --- Chat launcher (Metis): richer glow + gentle pulse --- */
+.chat-launcher{ box-shadow: 0 10px 30px rgba(240,178,78,0.4), 0 0 0 0 rgba(240,178,78,0.45); animation: metisPulse 3.2s ease-in-out infinite; }
+.chat-launcher:hover{ transform: translateY(-3px) scale(1.04); filter: brightness(1.05); animation:none; }
+@keyframes metisPulse{ 0%,100%{ box-shadow: 0 10px 30px rgba(240,178,78,0.4), 0 0 0 0 rgba(240,178,78,0.45);} 60%{ box-shadow: 0 10px 30px rgba(240,178,78,0.4), 0 0 0 12px rgba(240,178,78,0);} }
+@media (prefers-reduced-motion: reduce){ .chat-launcher{ animation:none; } }
+ 
+/* --- Roadmap progress bar: subtle sheen --- */
+.roadmap-progress-fill{ box-shadow: 0 0 12px -2px rgba(95,224,184,0.6); }
+ 
+/* --- Smooth anchor scrolling everywhere --- */
+html{ scroll-behavior: smooth; }
+ 
