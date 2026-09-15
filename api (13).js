@@ -26,7 +26,7 @@
 // this file. Trailing slash is stripped so path-joining is
 // unambiguous.
 const VELORA_API_BASE = (function(){
-  const configured = (typeof window !== 'undefined' && window.VELORA_API_BASE) || 'https://velora-backend.onrender.com';
+  const configured = (typeof window !== 'undefined' && window.VELORA_API_BASE) || 'https://velora-backend-2oye.onrender.com';
   return String(configured).replace(/\/+$/, '');
 })();
 
