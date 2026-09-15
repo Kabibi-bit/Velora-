@@ -417,3 +417,34 @@ html{ scroll-behavior: smooth; }
 .card:hover::after{ opacity: 0.85; }
 .card:hover{ box-shadow: 0 16px 40px -16px rgba(95,224,184,0.2), 0 6px 24px -12px rgba(0,0,0,0.85); }
  
+/* ============================================================
+   RANGE SLIDER (shared) — polished gold-filled track + glowing
+   handle, consistent across explore, auto, and any future slider.
+   Uses --fill (set by a small JS updater per page) for the WebKit
+   fill; Firefox uses ::-moz-range-progress natively.
+   ============================================================ */
+input[type=range]{
+  width: 100%;
+  -webkit-appearance: none; appearance: none;
+  height: 8px; border-radius: 999px;
+  background: linear-gradient(90deg, var(--gold) 0%, var(--gold) var(--fill,33%), var(--line-soft) var(--fill,33%), var(--line-soft) 100%);
+  outline: none; cursor: pointer;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.4);
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance: none; appearance: none;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #FBD79A, #EAA23C);
+  border: 2px solid #241704;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 12px -2px rgba(240,178,78,0.7);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+input[type=range]::-webkit-slider-thumb:hover{ transform: scale(1.15); box-shadow: 0 2px 10px rgba(0,0,0,0.6), 0 0 18px -2px rgba(240,178,78,0.9); }
+input[type=range]::-moz-range-thumb{
+  width: 20px; height: 20px; border-radius: 50%; border: 2px solid #241704;
+  background: radial-gradient(circle at 35% 30%, #FBD79A, #EAA23C);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 12px -2px rgba(240,178,78,0.7);
+}
+input[type=range]::-moz-range-track{ height: 8px; border-radius: 999px; background: var(--line-soft); }
+input[type=range]::-moz-range-progress{ height: 8px; border-radius: 999px; background: var(--gold); }
+ 
