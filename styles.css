@@ -372,3 +372,20 @@ html{ scroll-behavior: smooth; }
 /* --- Buttons inside panels: consistent lift already global; ensure ghost reads clearly --- */
 .panel .btn.ghost{ border-color: var(--line); }
  
+/* ============================================================
+   MATCH CARD POLISH (shared) — depth, gradient edge, warmer
+   hover glow. Placed in the shared stylesheet so job, athlete,
+   and admissions cards are all consistent. Scoped to .card so it
+   won't disturb non-card panels.
+   ============================================================ */
+.card{ position: relative; }
+.card::after{
+  content:''; position:absolute; inset:0; border-radius:inherit; padding:1px;
+  background: linear-gradient(135deg, rgba(155,135,245,0.25), rgba(95,224,184,0.10) 50%, transparent 75%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  opacity: 0.45; transition: opacity .2s ease; pointer-events: none;
+}
+.card:hover::after{ opacity: 0.85; }
+.card:hover{ box-shadow: 0 16px 40px -16px rgba(95,224,184,0.2), 0 6px 24px -12px rgba(0,0,0,0.85); }
+ 
