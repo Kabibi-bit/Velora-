@@ -322,3 +322,53 @@ footer{ margin-top: 64px; padding: 32px 0; border-top: 1px solid var(--line-soft
 /* --- Smooth anchor scrolling everywhere --- */
 html{ scroll-behavior: smooth; }
  
+/* ============================================================
+   AESTHETIC REFINEMENT v2 — hierarchy, header presence, depth.
+   Targeted polish: panel headers were tiny (14px) with no
+   presence; progress bars felt lifeless; no primary/secondary
+   distinction. Additive, preserves layout.
+   ============================================================ */
+ 
+/* --- Panel headers: more presence + a subtle accent tick --- */
+.panel h2{
+  font-size: 15.5px;
+  letter-spacing: -0.01em;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+.panel h2::before{
+  content: '';
+  width: 3px;
+  height: 15px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--gold), rgba(240,178,78,0.3));
+  flex: 0 0 auto;
+}
+/* violet accent for roadmap/plan panels, aurora for status panels - subtle variety */
+.panel.panel-roadmap h2::before{ background: linear-gradient(180deg, var(--violet), rgba(155,135,245,0.3)); }
+.panel.panel-status h2::before{ background: linear-gradient(180deg, var(--aurora), rgba(95,224,184,0.3)); }
+ 
+/* --- Roadmap progress bar: more substantial, with a soft glow --- */
+.roadmap-progress-track{ height: 10px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.4); }
+.roadmap-progress-fill{
+  box-shadow: 0 0 14px -2px rgba(95,224,184,0.55);
+  position: relative;
+}
+.roadmap-progress-label{ font-weight: 600; color: var(--text); }
+ 
+/* --- Featured panel: a primary panel gets a slightly warmer, lifted feel --- */
+.panel.featured{
+  box-shadow: 0 8px 34px -18px rgba(155,135,245,0.4), 0 2px 22px -14px rgba(0,0,0,0.85);
+}
+.panel.featured::before{
+  background: linear-gradient(135deg, rgba(155,135,245,0.5), rgba(95,224,184,0.2) 45%, transparent 72%);
+  opacity: 0.85;
+}
+ 
+/* --- Empty-state prompts: warmer, less "wireframe" --- */
+.empty-state, .card .hint{ line-height: 1.6; }
+ 
+/* --- Buttons inside panels: consistent lift already global; ensure ghost reads clearly --- */
+.panel .btn.ghost{ border-color: var(--line); }
+ 
