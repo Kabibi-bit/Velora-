@@ -531,3 +531,90 @@ body:has(.aurora-mesh)::before, body:has(.aurora-mesh)::after{ content:none; }
   box-shadow: 0 1px 0 rgba(255,255,255,0.03), 0 12px 40px -30px rgba(240,178,78,0.45);
 }
  
+/* ============================================================
+   APP COMPONENT POLISH v4 — richer data displays & timelines,
+   lifting functional pages to the flagship standard while keeping
+   dense dashboards readable. Additive.
+   ============================================================ */
+/* Stat boxes: glass + gradient hairline + gradient number */
+.stat-box{ position:relative; overflow:hidden; border:1px solid transparent; background-clip:padding-box;
+  background: linear-gradient(180deg, rgba(30,33,64,0.55), rgba(23,25,51,0.78)); box-shadow: 0 2px 18px -12px rgba(0,0,0,0.85); }
+.stat-box::after{ content:''; position:absolute; inset:0; border-radius:inherit; padding:1px;
+  background: linear-gradient(135deg, rgba(240,178,78,0.42), rgba(155,135,245,0.18) 55%, transparent 78%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude;
+  opacity:0.7; pointer-events:none; }
+.stat-box .snum{ background: linear-gradient(96deg,#FCE7B4,#F0B24E 55%,#EAA23C); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; }
+ 
+/* Chart panels: premium glass to match panels */
+.chart-panel{ position:relative; overflow:hidden; border:1px solid transparent; background-clip:padding-box;
+  background: linear-gradient(180deg, rgba(30,33,64,0.5), rgba(23,25,51,0.74)); box-shadow: 0 2px 22px -14px rgba(0,0,0,0.85); }
+.chart-panel::after{ content:''; position:absolute; inset:0; border-radius:inherit; padding:1px;
+  background: linear-gradient(135deg, rgba(155,135,245,0.4), rgba(95,224,184,0.16) 55%, transparent 78%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude;
+  opacity:0.6; pointer-events:none; }
+ 
+/* Roadmap timeline: gradient connector + glowing dots */
+.roadmap-step::before{ background: linear-gradient(180deg, rgba(95,224,184,0.5), rgba(155,135,245,0.35), var(--line)) !important; }
+.roadmap-step.done .roadmap-dot{ box-shadow: 0 0 10px rgba(95,224,184,0.7); }
+.roadmap-step.current .roadmap-dot{ box-shadow: 0 0 0 4px rgba(240,178,78,0.18), 0 0 16px rgba(240,178,78,0.85); }
+.roadmap-progress-fill{ box-shadow: 0 0 12px rgba(95,224,184,0.5); }
+ 
+/* Waypoint entries + roadmap preview: glass depth */
+.entry-card, .roadmap-next-preview{ background: linear-gradient(180deg, rgba(30,33,64,0.5), rgba(23,25,51,0.74)); }
+.entry-card{ box-shadow: 0 2px 20px -14px rgba(0,0,0,0.85); }
+ 
+/* Chips + active nav: subtle glow */
+.chip.active{ box-shadow: 0 0 0 1px rgba(95,224,184,0.25), 0 0 14px -6px rgba(95,224,184,0.55); }
+.nav-link.active{ box-shadow: 0 0 14px -6px rgba(240,178,78,0.75); }
+ 
+/* Floating Metis launcher: richer glow */
+.chat-launcher{ box-shadow: 0 12px 34px -8px rgba(240,178,78,0.5), inset 0 1px 0 rgba(255,255,255,0.4); }
+ 
+/* ============================================================
+   MOTION & INTERACTION POLISH v5 — the "alive" layer.
+   Tasteful entrance motion + micro-interactions so pages feel
+   designed and responsive, not static. One-time entrances target
+   only STABLE containers (never JS-rerendered lists, to avoid
+   replay jank). Fully guarded by prefers-reduced-motion. Additive.
+   ============================================================ */
+@keyframes kFadeUp{ from{ opacity:0; transform: translateY(14px); } to{ opacity:1; transform:none; } }
+ 
+/* One-time entrance for the page header + primary panels (staggered) */
+.page-head{ animation: kFadeUp .6s cubic-bezier(.2,.7,.3,1) both; }
+.page .panel{ animation: kFadeUp .6s cubic-bezier(.2,.7,.3,1) both; }
+.page .panel:nth-of-type(1){ animation-delay:.04s; }
+.page .panel:nth-of-type(2){ animation-delay:.10s; }
+.page .panel:nth-of-type(3){ animation-delay:.16s; }
+.page .panel:nth-of-type(4){ animation-delay:.22s; }
+.page .panel:nth-of-type(n+5){ animation-delay:.26s; }
+ 
+/* Progress bars: a soft moving sheen so momentum reads as live */
+.roadmap-progress-fill{ position:relative; overflow:hidden; }
+.roadmap-progress-fill::after{ content:''; position:absolute; inset:0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+  transform: translateX(-100%); animation: kSheen 2.8s ease-in-out infinite; }
+@keyframes kSheen{ 0%{ transform:translateX(-100%);} 55%,100%{ transform:translateX(220%);} }
+ 
+/* Live "watch" dot: a real pulse */
+.nav-status .dot.live{ animation: kPulse 2s ease-in-out infinite; }
+@keyframes kPulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(95,224,184,0.55);} 50%{ box-shadow:0 0 0 5px rgba(95,224,184,0);} }
+ 
+/* Skeleton shimmer utility (for loading states) */
+.skeleton{ position:relative; overflow:hidden; background: rgba(255,255,255,0.04); border-radius:8px; }
+.skeleton::after{ content:''; position:absolute; inset:0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+  transform:translateX(-100%); animation: kSheen 1.5s ease-in-out infinite; }
+ 
+/* Metis launcher: gentle idle float so it invites a click */
+.chat-launcher{ animation: kFloat 4.5s ease-in-out infinite; }
+@keyframes kFloat{ 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(-5px);} }
+.chat-launcher:hover{ animation:none; }
+ 
+/* Smoother curves on the interactive cards */
+.card, .panel, .milestone-card, .entry-card{ transition: transform .22s cubic-bezier(.2,.8,.2,1), box-shadow .22s ease, border-color .22s ease; }
+ 
+@media (prefers-reduced-motion: reduce){
+  .page-head, .page .panel, .chat-launcher{ animation:none !important; }
+  .roadmap-progress-fill::after, .skeleton::after, .nav-status .dot.live{ animation:none !important; }
+}
+ 
