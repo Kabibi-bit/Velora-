@@ -9,7 +9,7 @@
   --line-soft: #232548;
   --text: #FFFFFF;
   --text-dim: #B4B6D6;
-  --text-faint: #6E71A0;
+  --text-faint: #8386BE; /* lightened from #6E71A0 to meet WCAG AA (4.5:1) for the small 11-13px meta/hint text it's used on - was 3.37-4.17:1 (sub-AA); now 4.54-5.63:1. Same hue, still clearly a muted secondary tone. */
   --gold: #F0B24E;
   --gold-dim: rgba(240,178,78,0.16);
   --violet: #9B87F5;
