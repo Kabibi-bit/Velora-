@@ -85,7 +85,7 @@ input[type=text]::placeholder, textarea::placeholder{ color: var(--text-faint); 
 .chip{ font-family:'Manrope', sans-serif; font-size: 12.5px; font-weight: 600; padding: 8px 15px; border-radius: 999px; border: 1px solid var(--line); color: var(--text-dim); cursor:pointer; user-select:none; transition: all .15s ease; background: none; }
 .chip:hover{ border-color: var(--text-faint); }
 .chip.active{ border-color: var(--aurora); color: var(--aurora); background: var(--aurora-dim); }
-.chip:focus-visible, .btn:focus-visible, .icon-btn:focus-visible{ outline: 2px solid var(--gold); outline-offset:2px; }
+.chip:focus-visible, .btn:focus-visible, .icon-btn:focus-visible, .faq-item:focus-visible, [role="button"]:focus-visible{ outline: 2px solid var(--gold); outline-offset:2px; }
  
 .btn{ background: linear-gradient(135deg, #F7C878, #EAA23C); color: #241704; border: none; border-radius: var(--radius-sm); font-family:'Space Grotesk', sans-serif; font-weight:700; font-size: 14.5px; letter-spacing:0.01em; padding: 14px 22px; cursor:pointer; transition: filter .15s ease, transform .1s ease; display:inline-flex; align-items:center; gap:8px; }
 .btn:hover{ filter: brightness(1.07); }
